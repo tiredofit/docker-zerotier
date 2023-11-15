@@ -35,6 +35,8 @@ EOF
 configure_ui() {
     sanity_var UI_SITE_URL "Site URL eg https://example.com"
 
+    sed -i "s|{{UI_LISTEN_PORT}}|${UI_LISTEN_PORT}|g" /etc/nginx/sites.enabled/${NGINX_SITE_ENABLED}.conf
+
     transform_file_var \
                         DB_HOST \
                         DB_NAME \

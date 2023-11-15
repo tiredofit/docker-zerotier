@@ -11,14 +11,15 @@ if [ ! -f "/tmp/.container/container-restart" ] ; then
         print_debug "Configuring Controller"
         configure_controller
     else
-        service_stop controller
+        service_stop 20-controller
     fi
 
     if var_true "${ENABLE_UI}" ; then
         print_debug "Configuring UI"
         configure_ui
     else
-        service_stop ui
+        service_stop 10-nginx
+        service_stop 20-ui
     fi
 
     if var_true "${ENABLE_STANDALONE}" ; then

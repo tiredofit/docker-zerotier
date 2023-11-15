@@ -5,7 +5,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.zerotier-app.rule=Host(`zerotier.example.com`)
-      - traefik.http.services.zerotier-app.loadbalancer.server.port=3000
+      - traefik.http.services.zerotier-app.loadbalancer.server.port=80
     ports:
       - 9993:9993/udp
     cap_add:
@@ -17,8 +17,7 @@ services:
     environment:
       - TIMEZONE=America/Vancouver
       - CONTAINER_NAME=zerotier-app
-
-      - SETUP_TYPE=AUTO
+      - CONTAINER_ENABLE_MONITORING=FALSE
 
       - MODE=CONTROLLER,UI
 
@@ -40,7 +39,7 @@ services:
     image: tiredofit/postgres:16
     container_name: zerotier-db
     volumes:
-      - ./db:/var/lib/postgresql
+      - ./db:/var/lib/postgresql/data
     environment:
       - TIMEZONE=America/Vancouver
       - CONTAINER_NAME=zerotier-db

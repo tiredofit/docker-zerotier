@@ -1,15 +1,21 @@
 ARG DISTRO=alpine
 ARG DISTRO_VARIANT=3.18
 
-FROM docker.io/tiredofit/${DISTRO}:${DISTRO_VARIANT}
+FROM docker.io/tiredofit/nginx:${DISTRO}-${DISTRO_VARIANT}
 LABEL maintainer="Dave Conroy (github.com/tiredofit)"
 
 ARG ZEROTIER_VERSION
+ARG ZT_NET_VERSION
 
-ENV ZEROTIER_VERSION=1.12.2 \
-    ZT_NET_VERSION=v0.4.0 \
+ENV ZEROTIER_VERSION=${ZEROTIER_VERSION:-"1.12.2"} \
+    ZT_NET_VERSION=${ZT_NET_VERSION:-"v0.4.1"} \
     ZEROTIER_REPO_URL=https://github.com/zerotier/ZeroTierOne \
     ZT_NET_REPO_URL=https://github.com/sinamics/ztnet \
+    NGINX_LOG_ACCESS_LOCATION=/logs/nginx \
+    NGINX_LOG_ERROR_LOCATION=/logs/nginx \
+    NGINX_LOG_BLOCKED_LOCATION=/logs/nginx \
+    NGINX_ENABLE_CREATE_SAMPLE_HTML=FALSE \
+    NGINX_SITE_ENABLED=ztnet \
     CONTAINER_ENABLE_MESSAGING=FALSE \
     IMAGE_NAME="tiredofit/zerotier" \
     IMAGE_REPO_URL="https://github.com/tiredofit/zerotier/"
@@ -37,7 +43,6 @@ RUN source assets/functions/00-container && \
     \
     package install .zerotier-run-deps \
                     iptables \
-                    iptables-legacy \
                     libc6-compat \
                     libstdc++ \
                     && \
@@ -96,16 +101,15 @@ RUN source assets/functions/00-container && \
                     && \
     package cleanup && \
     \
+    chown -R zerotier:zerotier /app && \
     rm -rf \
             /root/.cache \
             /root/.gitconfig \
             /root/.npm \
-            /root/go
-
-            #/usr/src/*
+            /root/go \
+            /usr/src/*
 
 EXPOSE 3000
 EXPOSE 9993/udp
 
 COPY install /
-

@@ -2,8 +2,8 @@
 
 source /assets/functions/00-container
 PROCESS_NAME="zt-net"
-source /assets/defaults/10-zerotier
-source /assets/functions/10-zerotier
+source /assets/defaults/20-zerotier
+source /assets/functions/20-zerotier
 check_container_initialized
 
 export NEXTAUTH_URL_INTERNAL=http://localhost:${UI_LISTEN_PORT}
@@ -20,7 +20,7 @@ liftoff
 print_start "Starting Zerotier UI ZT-Net ${ZTNET_UI_VERSION}"
 cd /app
 
-exec s6-setuidgid "${ZEROTIER_USER}" \
+silent exec s6-setuidgid "${ZEROTIER_USER}" \
                                 node server.js
 
 

@@ -11,8 +11,10 @@
 
 This will build a Docker Image for [Zerotier One](https://zerotier.com), A virtual ethernet switch client.
 
+- Includes Zerotier One for setting up virtual private networks
 - Also includes the management console [zt-net](https://github.com/sinamics/next_ztnet)
--
+- Nginx as proxy to zt-net for logging and authentication
+
 ## Maintainer
 
 - [Dave Conroy](https://github.com/tiredofit/)
@@ -22,6 +24,7 @@ This will build a Docker Image for [Zerotier One](https://zerotier.com), A virtu
 - [About](#about)
 - [Maintainer](#maintainer)
 - [Table of Contents](#table-of-contents)
+- [Prerequisites and Assumptions](#prerequisites-and-assumptions)
 - [Installation](#installation)
   - [Build from Source](#build-from-source)
   - [Prebuilt Images](#prebuilt-images)
@@ -32,6 +35,8 @@ This will build a Docker Image for [Zerotier One](https://zerotier.com), A virtu
   - [Environment Variables](#environment-variables)
     - [Base Images used](#base-images-used)
     - [Container Options](#container-options)
+    - [Controller Options](#controller-options)
+    - [UI Options](#ui-options)
   - [Networking](#networking)
 - [Maintenance](#maintenance)
   - [Shell Access](#shell-access)
@@ -43,6 +48,12 @@ This will build a Docker Image for [Zerotier One](https://zerotier.com), A virtu
 - [License](#license)
 - [References](#references)
 
+## Prerequisites and Assumptions
+*  Assumes you are using some sort of SSL terminating reverse proxy such as:
+   *  [Traefik](https://github.com/tiredofit/docker-traefik)
+   *  [Nginx](https://github.com/jc21/nginx-proxy-manager)
+   *  [Caddy](https://github.com/caddyserver/caddy)
+*  Requires access to a  PostgreSQL Server if using the UI
 
 ## Installation
 ### Build from Source
@@ -86,6 +97,7 @@ The following directories are used for configuration and can be mapped for persi
 | Directory | Description            |
 | --------- | ---------------------- |
 | `/data`   | Zerotier volatile data |
+| `/logs`   | Logfiles               |
 
 
 * * *
@@ -93,41 +105,59 @@ The following directories are used for configuration and can be mapped for persi
 
 #### Base Images used
 
-This image relies on an [Alpine Linux](https://hub.docker.com/r/tiredofit/alpine) base image that relies on an [init system](https://github.com/just-containers/s6-overlay) for added capabilities. Outgoing SMTP capabilities are handlded via `msmtp`. Individual container performance monitoring is performed by [zabbix-agent](https://zabbix.org). Additional tools include: `bash`,`curl`,`less`,`logrotate`,`nano`.
+This image relies on an [Alpine Linux](https://hub.docker.com/r/tiredofit/alpine) or [Debian Linux](https://hub.docker.com/r/tiredofit/debian) base image that relies on an [init system](https://github.com/just-containers/s6-overlay) for added capabilities. Outgoing SMTP capabilities are handlded via `msmtp`. Individual container performance monitoring is performed by [zabbix-agent](https://zabbix.org). Additional tools include: `bash`,`curl`,`less`,`logrotate`,`nano`.
 
 Be sure to view the following repositories to understand all the customizable options:
 
-| Image                                                  | Description                            |
-| ------------------------------------------------------ | -------------------------------------- |
-| [OS Base](https://github.com/tiredofit/docker-alpine/) | Customized Image based on Alpine Linux |
+| Image                                                         | Description                            |
+| ------------------------------------------------------------- | -------------------------------------- |
+| [OS Base](https://github.com/tiredofit/docker-alpine/)        | Customized Image based on Alpine Linux |
+| [Nginx](https://github.com/tiredofit/docker-nginx/)           | Nginx webserver                        |
+| [PHP-FPM](https://github.com/tiredofit/docker-nginx-php-fpm/) | PHP Interpreter                        |
+
 
 
 #### Container Options
 
-| Variable                              | Description                                                    | Default                                      | `_FILE` |
-| ------------------------------------- | -------------------------------------------------------------- | -------------------------------------------- | ------- |
-| `MODE`                                | What mode `CONTROLLER` `UI` `STANDALONE` seperated by commas   | `CONTROLLER,UI`                              |         |
-| `CONTROLLER_ALLOW_TCP_FALLBACK_RELAY` | Enable TCP relay                                               | `TRUE`                                       |         |
-| `CONTROLLER_DATA_PATH`                | Zerotier volatile data                                         | `/data/`                                     |         |
-| `CONTROLLER_ENABLE_PORT_MAPPING`      | Enable Port mapping                                            | `TRUE`                                       |         |
-| `CONTROLLER_LISTEN_PORT`              | Zerotier Controller listen port                                | `9993`                                       |         |
-| `CONTROLLER_MANAGEMENT_NETWORKS`      | Comma seperated value of networks allowed to manage controller | `0.0.0.0/0`                                  |         |
-| `CONTROLLER_USER`                     | What username to run controller as                             | `root`                                       |         |
-| `UI_CONTROLLER_URL`                   | How can the UI access the controller                           | `http://localhost:${CONTROLLER_LISTEN_PORT}` |         |
-| `UI_DB_HOST`                          | DB Host for Postgresql                                         |                                              |         |
-| `UI_DB_NAME`                          | DB Name for UI                                                 |                                              |         |
-| `UI_DB_PASS`                          | Password for UI_DB_USER                                        |                                              |         |
-| `UI_DB_PORT`                          | DB Port for Postgresql                                         | `5432`                                       |         |
-| `UI_DB_USER`                          | DB User for UI_DB_NAME                                         |                                              |         |
-| `UI_LISTEN_PORT`                      | What port for the UI to listen on                              | `3000`                                       |         |
+| Variable | Description                                                  | Default         | `_FILE` |
+| -------- | ------------------------------------------------------------ | --------------- | ------- |
+| `MODE`   | What mode `CONTROLLER` `UI` `STANDALONE` seperated by commas | `CONTROLLER,UI` |         |
+
+#### Controller Options
+
+| Variable                              | Description                                                    | Default     | `_FILE` |
+| ------------------------------------- | -------------------------------------------------------------- | ----------- | ------- |
+| `CONTROLLER_ALLOW_TCP_FALLBACK_RELAY` | Enable TCP relay                                               | `TRUE`      |         |
+| `CONTROLLER_DATA_PATH`                | Zerotier volatile data                                         | `/data/`    |         |
+| `CONTROLLER_ENABLE_PORT_MAPPING`      | Enable Port mapping                                            | `TRUE`      |         |
+| `CONTROLLER_LISTEN_PORT`              | Zerotier Controller listen port                                | `9993`      |         |
+| `CONTROLLER_MANAGEMENT_NETWORKS`      | Comma seperated value of networks allowed to manage controller | `0.0.0.0/0` |         |
+| `CONTROLLER_USER`                     | What username to run controller as                             | `root`      |         |
+
+#### UI Options
+
+| Variable            | Description                                        | Default                                      | `_FILE` |
+| ------------------- | -------------------------------------------------- | -------------------------------------------- | ------- |
+| `ENABLE_NGINX`      | If wanting to use Nginx as proxy to UI_LISTEN_PORT | `TRUE`                                       |         |
+| `NGINX_LISTEN_PORT` | Nginx Listening Port                               | `80`                                         |         |
+| `UI_CONTROLLER_URL` | How can the UI access the controller               | `http://localhost:${CONTROLLER_LISTEN_PORT}` |         |
+| `UI_DB_HOST`        | DB Host for Postgresql                             |                                              |         |
+| `UI_DB_NAME`        | DB Name for UI                                     |                                              |         |
+| `UI_DB_PASS`        | Password for UI_DB_USER                            |                                              |         |
+| `UI_DB_PORT`        | DB Port for Postgresql                             | `5432`                                       |         |
+| `UI_DB_USER`        | DB User for UI_DB_NAME                             |                                              |         |
+| `UI_LISTEN_PORT`    | What port for the UI to listen on                  | `3000`                                       |         |
+| `UI_SECRET`         | Random secret for session and cookie storage       | `random`                                     |         |
 
 
 ### Networking
 
 | Port   | Protocol | Description          |
 | ------ | -------- | -------------------- |
+| `80`   | `tcp`    | Nginx                |
 | `3000` | `tcp`    | zt-net web UI        |
 | `9993` | `udp`    | Zerotier Control API |
+
 ## Maintenance
 ### Shell Access
 
@@ -141,17 +171,18 @@ docker exec -it (whatever your container name is) bash
 These images were built to serve a specific need in a production environment and gradually have had more functionality added based on requests from the community.
 ### Usage
 - The [Discussions board](../../discussions) is a great place for working with the community on tips and tricks of using this image.
-- Consider [sponsoring me](https://github.com/sponsors/tiredofit) for personalized support.
+- [Sponsor me](https://tiredofit.ca/sponsor) for personalized support.
+
 ### Bugfixes
 - Please, submit a [Bug Report](issues/new) if something isn't working as expected. I'll do my best to issue a fix in short order.
 
 ### Feature Requests
 - Feel free to submit a feature request, however there is no guarantee that it will be added, or at what timeline.
-- Consider [sponsoring me](https://github.com/sponsors/tiredofit) regarding development of features.
+- [Sponsor me](https://tiredofit.ca/sponsor) regarding development of features.
 
 ### Updates
 - Best effort to track upstream changes, More priority if I am actively using the image in a production environment.
-- Consider [sponsoring me](https://github.com/sponsors/tiredofit) for up to date releases.
+- [Sponsor me](https://tiredofit.ca/sponsor) for up to date releases.
 
 ## License
 MIT. See [LICENSE](LICENSE) for more details.
