@@ -1,0 +1,83 @@
+services:
+  zerotier-app:
+    image: tiredofit/zerotier
+    container_name: zerotier-app
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.zerotier-app.rule=Host(`zerotier.example.com`)
+      - traefik.http.services.zerotier-app.loadbalancer.server.port=3000
+    ports:
+      - 9993:9993/udp
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    volumes:
+      - ./data:/data
+      - ./logs:/logs
+    environment:
+      - TIMEZONE=America/Vancouver
+      - CONTAINER_NAME=zerotier-app
+
+      - SETUP_TYPE=AUTO
+
+      - MODE=CONTROLLER,UI
+
+      - CONTROLLER_LISTEN_PORT=9993
+
+      - UI_DB_HOST=zerotier-db
+      - UI_DB_PORT=5432
+      - UI_DB_NAME=zerotier
+      - UI_DB_USER=zerotier
+      - UI_DB_PASS=zerotier
+
+      - UI_SITE_URL=https://zerotier.example.com
+    networks:
+      - proxy
+      - services
+    restart: always
+
+  zerotier-db:
+    image: tiredofit/postgres:16
+    container_name: zerotier-db
+    volumes:
+      - ./db:/var/lib/postgresql
+    environment:
+      - TIMEZONE=America/Vancouver
+      - CONTAINER_NAME=zerotier-db
+      - CONTAINER_ENABLE_MONITORING=FALSE
+
+      - SUPERUSER_PASS=password
+      - DB_NAME=zerotier
+      - DB_USER=zerotier
+      - DB_PASS=zerotier
+    networks:
+      - services
+    restart: always
+
+  zerotier-db-backup:
+    image: tiredofit/db-backup:latest
+    container_name: zerotier-db-backup
+    volumes:
+      - ./dbbackup:/backup
+    environment:
+      - TIMEZONE=America/Vancouver
+      - CONTAINER_NAME=zerotier-db-backup
+      - CONTAINER_ENABLE_MONITORING=FALSE
+
+      - DB01_HOST=zerotier-db
+      - DB01_TYPE=postgres
+      - DB01_NAME=zerotier
+      - DB01_USER=zerotier
+      - DB01_PASS=zerotier
+      - DB01_BACKUP_INTERVAL=1440
+      - DB01_BACKUP_BEGIN=0000
+      - DB01_CLEANUP_TIME=8640
+    networks:
+      - services
+    restart: always
+
+networks:
+  proxy:
+    external: true
+  services:
+    external: true
