@@ -1,0 +1,134 @@
+#!/command/with-contenv bash
+
+bootstrap_filesystem() {
+    if [ ! -d "${CONTROLLER_DATA_PATH}" ]; then
+        mkdir -p "${CONTROLLER_DATA_PATH}"
+    fi
+    if [ "$(stat -c %U "${CONTROLLER_DATA_PATH}")" != "zerotier" ] ; then chown zerotier:zerotier "${CONTROLLER_DATA_PATH}" ; fi
+    rm -rf /var/lib/zerotier-one
+    ln -sf "${CONTROLLER_DATA_PATH}" /var/lib/zerotier-one
+
+    if [ ! -d "${LOG_PATH}" ]; then
+        mkdir -p "${LOG_PATH}"
+    fi
+    if [ "$(stat -c %U "${LOG_PATH}")" != "zerotier" ] ; then chown -R zerotier:zerotier "${LOG_PATH}" ; fi
+}
+
+configure_controller() {
+    for management_network in ${CONTROLLER_MANAGEMENT_NETWORKS//,/$IFS}; do
+        management_networks=${management_networks}"\"${management_network}\","
+    done
+    management_networks=$(echo ${management_networks} | sed "s|,$||g")
+    cat <<EOF > /var/lib/zerotier-one/local.conf
+  {
+    "settings": {
+        "primaryPort": ${ZT_PRIMARY_PORT:-${CONTROLLER_LISTEN_PORT}},
+        "portMappingEnabled": ${ZT_PORT_MAPPING_ENABLED:-${CONTROLLER_ENABLE_PORT_MAPPING,,}},
+        "softwareUpdate": "disable",
+        "allowManagementFrom": [${management_networks}],
+        "allowTcpFallbackRelay": ${ZT_ALLOW_TCP_FALLBACK_RELAY:-${CONTROLLER_ALLOW_TCP_FALLBACK_RELAY,,}}
+    }
+  }
+EOF
+}
+
+configure_ui() {
+    sanity_var UI_SITE_URL "Site URL eg https://example.com"
+
+    transform_file_var \
+                        DB_HOST \
+                        DB_NAME \
+                        DB_PASS \
+                        DB_PORT \
+                        DB_USER
+
+    if [ -n "${UI_DB_HOST}" ]; then DB_HOST=${DB_HOST:-${UI_DB_HOST}}; fi
+    if [ -n "${UI_DB_NAME}" ]; then DB_NAME=${DB_NAME:-${UI_DB_NAME}}; fi
+    if [ -n "${UI_DB_PASS}" ]; then DB_PASS=${DB_PASS:-${UI_DB_PASS}}; fi
+    if [ -n "${UI_DB_PORT}" ]; then DB_PORT=${DB_PORT:-${UI_DB_PORT}}; fi
+    if [ -n "${UI_DB_USER}" ]; then DB_USER=${DB_USER:-${UI_DB_USER}}; fi
+
+    db_ready pgsql
+
+    cat << EOF >> /app/.env
+DATABASE_URL=postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=public
+ZT_ADDR=${ZT_ADDR}
+NEXT_PUBLIC_APP_VERSION=${NEXT_PUBLIC_APP_VERSION}
+EOF
+
+    envFilename='.env.production'
+    nextFolder='/app/.next/'
+
+    #function apply_path {
+    #    # read all config file
+    #    while read line; do
+    #        # no comment or not empty
+    #        if [ "${line:0:1}" == "#" ] || [ "${line}" == "" ]; then
+    #            continue
+    #        fi
+#
+    #        # split
+    #        configName="$(cut -d'=' -f1 <<<"$line")"
+    #        configValue="$(cut -d'=' -f2 <<<"$line")"
+    #        # get system env
+    #        envValue=$(env | grep "^$configName=" | grep -oe '[^=]*$');
+#
+    #        # if config found
+    #        if [ -n "$configValue" ] && [ -n "$envValue" ]; then
+    #            # replace all
+    #            echo "Replace: ${configValue} with: ${envValue}"
+    #            find $nextFolder \( -type d -name .git -prune \) -o -type f -print0 | xargs -0 sed -i "s#$configValue#$envValue#g"
+    #        fi
+    #    done < $envFilename
+    #}
+
+    cd /app
+    print_info "[ui] Applying migrations to the database"
+    silent npx prisma migrate deploy
+    silent print_info "[ui] Migrations applied successfully"
+
+    silent print_info "[ui] Seeding the database"
+    silent npx prisma db seed
+    silent print_info "[ui] Database seeded successfully"
+
+    if [ -z "${UI_SECRET}" ]; then
+        UI_SECRET=$(openssl rand -base64 32)
+    fi
+
+    echo "NEXTAUTH_URL=\"${UI_SITE_URL}\"" >> /app/.env
+    echo "NEXT_PUBLIC_APP_VERSION=${ZT_NET_VERSION}" >> /app/.env
+    echo "PORT=${UI_LISTEN_PORT}" >> /app/.env
+    echo "NEXTAUTH_SECRET=${UI_SECRET}" >> /app/.env
+}
+
+setup_container_mode() {
+    if [ -f "/tmp/.container/toi_zerotier/CONTAINER_MODE" ]; then
+        print_debug "Importing MODE environment generated variables"
+        source /tmp/.container/toi_zerotier/CONTAINER_MODE
+    else
+        mkdir -p /tmp/.container/toi_zerotier/
+        modes=$(echo "${MODE}" | tr "," "\n")
+        for mode in $modes ; do
+            case "${mode,,}" in
+                "controller" )
+                    print_debug "Enabling Container Mode for: CONTROLLER"
+                    echo "ENABLE_CONTROLLER=TRUE" >> /tmp/.container/toi_zerotier/CONTAINER_MODE
+                ;;
+                "ui" )
+                    print_debug "Enabling Container Mode for: UI"
+                    echo "ENABLE_UI=TRUE" >> /tmp/.container/toi_zerotier/CONTAINER_MODE
+                ;;
+                "standalone" | "manual" )
+                    print_debug "Enabling Container Mode for: STANDALONE"
+                    echo "ENABLE_STANDALONE=TRUE" >> /tmp/.container/toi_zerotier/CONTAINER_MODE
+                ;;
+                *)
+                    print_error "Unknown 'MODE' environment variable - exitting.."
+                    exit 1
+                ;;
+            esac
+        done
+        source /tmp/.container/toi_zerotier/CONTAINER_MODE
+    fi
+}
+

@@ -1,0 +1,31 @@
+#!/command/with-contenv bash
+
+source /assets/functions/00-container
+prepare_service
+PROCESS_NAME="zerotier"
+setup_container_mode
+bootstrap_filesystem
+
+if [ ! -f "/tmp/.container/container-restart" ] ; then
+    if var_true "${ENABLE_CONTROLLER}" ; then
+        print_debug "Configuring Controller"
+        configure_controller
+    else
+        service_stop controller
+    fi
+
+    if var_true "${ENABLE_UI}" ; then
+        print_debug "Configuring UI"
+        configure_ui
+    else
+        service_stop ui
+    fi
+
+    if var_true "${ENABLE_STANDALONE}" ; then
+        print_debug "Configuring Standlone"
+        liftoff
+        exit 0
+    fi
+fi
+
+liftoff
