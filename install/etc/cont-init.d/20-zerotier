@@ -5,6 +5,7 @@ prepare_service
 PROCESS_NAME="zerotier"
 setup_container_mode
 bootstrap_filesystem
+add_bash_completion
 
 if [ ! -f "/tmp/.container/container-restart" ] ; then
     if var_true "${ENABLE_CONTROLLER}" ; then
