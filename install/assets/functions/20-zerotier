@@ -67,6 +67,7 @@ bootstrap_filesystem() {
 }
 
 configure_controller() {
+    if var_false "${CONTROLLER_ENABLE_METRICS}" ; then ln -sf /dev/null /var/lib/zerotier-one/metrics.prom ; fi
     for management_network in ${CONTROLLER_MANAGEMENT_NETWORKS//,/$IFS}; do
         management_networks=${management_networks}"\"${management_network}\","
     done

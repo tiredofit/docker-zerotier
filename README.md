@@ -127,6 +127,7 @@ Be sure to view the following repositories to understand all the customizable op
 | ------------------------------------- | -------------------------------------------------------------- | ----------- | ------- |
 | `CONTROLLER_ALLOW_TCP_FALLBACK_RELAY` | Enable TCP relay                                               | `TRUE`      |         |
 | `CONTROLLER_DATA_PATH`                | Zerotier volatile data                                         | `/data/`    |         |
+| `CONTROLLER_ENABLE_METRICS`           | Enabler or disable prometheus metrics                          | `FALSE`     |         |
 | `CONTROLLER_ENABLE_PORT_MAPPING`      | Enable Port mapping                                            | `TRUE`      |         |
 | `CONTROLLER_LISTEN_PORT`              | Zerotier Controller listen port                                | `9993`      |         |
 | `CONTROLLER_MANAGEMENT_NETWORKS`      | Comma seperated value of networks allowed to manage controller | `0.0.0.0/0` |         |
