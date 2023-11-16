@@ -113,8 +113,6 @@ Be sure to view the following repositories to understand all the customizable op
 | ------------------------------------------------------------- | -------------------------------------- |
 | [OS Base](https://github.com/tiredofit/docker-alpine/)        | Customized Image based on Alpine Linux |
 | [Nginx](https://github.com/tiredofit/docker-nginx/)           | Nginx webserver                        |
-| [PHP-FPM](https://github.com/tiredofit/docker-nginx-php-fpm/) | PHP Interpreter                        |
-
 
 
 #### Container Options
