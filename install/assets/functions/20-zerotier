@@ -151,9 +151,11 @@ EOF
     fi
 
     echo "NEXTAUTH_URL=\"${UI_SITE_URL}\"" >> /app/.env
-    echo "NEXT_PUBLIC_APP_VERSION=${ZT_NET_VERSION}" >> /app/.env
+    echo "NEXT_PUBLIC_APP_VERSION=${ZTNET_VERSION}" >> /app/.env
     echo "PORT=${UI_LISTEN_PORT}" >> /app/.env
     echo "NEXTAUTH_SECRET=${UI_SECRET}" >> /app/.env
+
+    update_template /etc/nginx/sites.enabled/ztnet.conf HOSTNAME
 }
 
 setup_container_mode() {

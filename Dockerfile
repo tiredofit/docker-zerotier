@@ -79,7 +79,7 @@ RUN source assets/functions/00-container && \
     cp -R package.json /app/package.json && \
     mkdir -p /app/.next && \
     cp -R .next/server /app/.next/server && \
-    cp -R .next/standalone/* /app/ && \
+    cp -R .next/standalone/. /app/ && \
     cp -R .next/static /app/.next/static && \
     cp -R prisma /app/prisma && \
     cp -R .next/BUILD* /app/.next/ && \
@@ -106,8 +106,8 @@ RUN source assets/functions/00-container && \
             /root/.cache \
             /root/.gitconfig \
             /root/.npm \
-            /root/go \
-            /usr/src/*
+            /root/go
+#            /usr/src/*
 
 EXPOSE 3000
 EXPOSE 9993/udp

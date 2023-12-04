@@ -6,9 +6,9 @@ source /assets/defaults/20-zerotier
 source /assets/functions/20-zerotier
 check_container_initialized
 
-export NEXTAUTH_URL_INTERNAL=http://localhost:${UI_LISTEN_PORT}
 export NEXT_TELEMETRY_DISABLED=1
 export NODE_ENV=production
+
 if [ -z "${UI_CONTROLLER_URL}" ] ; then
     export ZT_ADDR=http://localhost:${CONTROLLER_LISTEN_PORT}
 else
