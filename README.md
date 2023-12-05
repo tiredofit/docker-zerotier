@@ -147,6 +147,7 @@ Be sure to view the following repositories to understand all the customizable op
 | `UI_DB_USER`        | DB User for UI_DB_NAME                             |                                              |         |
 | `UI_LISTEN_PORT`    | What port for the UI to listen on                  | `3000`                                       |         |
 | `UI_SECRET`         | Random secret for session and cookie storage       | `random`                                     |         |
+| `UI_SITE_NAME`         | Site name to display on UI | `ZTNET` | |
 
 
 ### Networking

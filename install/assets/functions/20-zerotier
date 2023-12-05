@@ -108,7 +108,8 @@ configure_ui() {
     cat << EOF >> /app/.env
 DATABASE_URL=postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=public
 ZT_ADDR=${ZT_ADDR}
-NEXT_PUBLIC_APP_VERSION=${NEXT_PUBLIC_APP_VERSION}
+NEXT_PUBLIC_APP_VERSION=${ZT_NET_VERSION}
+
 EOF
 
     envFilename='.env.production'
@@ -154,6 +155,7 @@ EOF
     echo "NEXT_PUBLIC_APP_VERSION=${ZTNET_VERSION}" >> /app/.env
     echo "PORT=${UI_LISTEN_PORT}" >> /app/.env
     echo "NEXTAUTH_SECRET=${UI_SECRET}" >> /app/.env
+    echo "NEXT_PUBLIC_SITE_NAME=${UI_SITE_NAME}" >> /app/.env
 
     update_template /etc/nginx/sites.enabled/ztnet.conf HOSTNAME
 }
