@@ -12,8 +12,8 @@
 This will build a Docker Image for [Zerotier One](https://zerotier.com), A virtual ethernet switch client.
 
 - Includes Zerotier One for setting up virtual private networks
-- Also includes the management console [zt-net](https://github.com/sinamics/next_ztnet)
-- Nginx as proxy to zt-net for logging and authentication
+- Also includes the management console [ZTNET](https://github.com/sinamics/next_ztnet)
+- Nginx as proxy to ZTNET for logging and authentication
 
 ## Maintainer
 
@@ -109,10 +109,10 @@ This image relies on an [Alpine Linux](https://hub.docker.com/r/tiredofit/alpine
 
 Be sure to view the following repositories to understand all the customizable options:
 
-| Image                                                         | Description                            |
-| ------------------------------------------------------------- | -------------------------------------- |
-| [OS Base](https://github.com/tiredofit/docker-alpine/)        | Customized Image based on Alpine Linux |
-| [Nginx](https://github.com/tiredofit/docker-nginx/)           | Nginx webserver                        |
+| Image                                                  | Description                            |
+| ------------------------------------------------------ | -------------------------------------- |
+| [OS Base](https://github.com/tiredofit/docker-alpine/) | Customized Image based on Alpine Linux |
+| [Nginx](https://github.com/tiredofit/docker-nginx/)    | Nginx webserver                        |
 
 
 #### Container Options
@@ -147,7 +147,7 @@ Be sure to view the following repositories to understand all the customizable op
 | `UI_DB_USER`        | DB User for UI_DB_NAME                             |                                              |         |
 | `UI_LISTEN_PORT`    | What port for the UI to listen on                  | `3000`                                       |         |
 | `UI_SECRET`         | Random secret for session and cookie storage       | `random`                                     |         |
-| `UI_SITE_NAME`         | Site name to display on UI | `ZTNET` | |
+| `UI_SITE_NAME`      | Site name to display on UI                         | `ZTNET`                                      |         |
 
 
 ### Networking
@@ -155,7 +155,7 @@ Be sure to view the following repositories to understand all the customizable op
 | Port   | Protocol | Description          |
 | ------ | -------- | -------------------- |
 | `80`   | `tcp`    | Nginx                |
-| `3000` | `tcp`    | zt-net web UI        |
+| `3000` | `tcp`    | ZTNET web UI         |
 | `9993` | `udp`    | Zerotier Control API |
 
 ## Maintenance
