@@ -1,3 +1,9 @@
+## 0.29.1 2024-03-02 <dave at tiredofit dot ca>
+
+   ### Added
+      - Zerotier 0.5.11
+
+
 ## 0.29.0 2024-02-08 <dave at tiredofit dot ca>
 
    ### Added
