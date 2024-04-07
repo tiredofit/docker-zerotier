@@ -8,7 +8,7 @@ ARG ZEROTIER_VERSION
 ARG ZT_NET_VERSION
 
 ENV ZEROTIER_VERSION=${ZEROTIER_VERSION:-"1.12.2"} \
-    ZT_NET_VERSION=${ZT_NET_VERSION:-"v0.5.11"} \
+    ZT_NET_VERSION=${ZT_NET_VERSION:-"v0.6.1"} \
     ZEROTIER_REPO_URL=https://github.com/zerotier/ZeroTierOne \
     ZT_NET_REPO_URL=https://github.com/sinamics/ztnet \
     NGINX_LOG_ACCESS_LOCATION=/logs/nginx \
