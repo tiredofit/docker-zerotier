@@ -7,8 +7,8 @@ LABEL maintainer="Dave Conroy (github.com/tiredofit)"
 ARG ZEROTIER_VERSION
 ARG ZT_NET_VERSION
 
-ENV ZEROTIER_VERSION=${ZEROTIER_VERSION:-"1.12.2"} \
-    ZT_NET_VERSION=${ZT_NET_VERSION:-"v0.6.2"} \
+ENV ZEROTIER_VERSION=${ZEROTIER_VERSION:-"1.14.0"} \
+    ZT_NET_VERSION=${ZT_NET_VERSION:-"v0.6.4"} \
     ZEROTIER_REPO_URL=https://github.com/zerotier/ZeroTierOne \
     ZT_NET_REPO_URL=https://github.com/sinamics/ztnet \
     NGINX_LOG_ACCESS_LOCATION=/logs/nginx \

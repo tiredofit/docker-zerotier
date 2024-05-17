@@ -1,3 +1,10 @@
+## 0.34.0 2024-05-17 <dave at tiredofit dot ca>
+
+   ### Added
+      - Zerotier 1.14.0
+      - ZTNet 0.6.4
+
+
 ## 0.33.0 2024-04-14 <dave at tiredofit dot ca>
 
    ### Added
