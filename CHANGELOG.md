@@ -1,3 +1,9 @@
+## 0.36.0 2024-06-04 <dave at tiredofit dot ca>
+
+   ### Added
+      - ZTNet 0.6.6
+
+
 ## 0.35.0 2024-05-22 <dave at tiredofit dot ca>
 
    ### Added
