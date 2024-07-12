@@ -1,3 +1,9 @@
+## 0.38.0 2024-07-12 <dave at tiredofit dot ca>
+
+   ### Changed
+      - Update ZTNET version
+
+
 ## 0.37.0 2024-07-12 <dave at tiredofit dot ca>
 
    ### Added
