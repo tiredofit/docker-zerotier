@@ -1,3 +1,9 @@
+## 0.43.0 2024-09-12 <dave at tiredofit dot ca>
+
+   ### Added
+      - ZerotierOne 1.14.1
+
+
 ## 0.39.3 2024-09-02 <dave at tiredofit dot ca>
 
    ### Added
