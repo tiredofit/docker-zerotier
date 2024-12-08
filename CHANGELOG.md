@@ -1,3 +1,9 @@
+## 0.44.1 2024-12-07 <dave at tiredofit dot ca>
+
+   ### Added
+      - Pin to tiredofit/nginx:alpine-3.21
+
+
 ## 0.44.0 2024-11-21 <dave at tiredofit dot ca>
 
    ### Added
