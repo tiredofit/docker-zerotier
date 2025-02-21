@@ -1,7 +1,7 @@
 #!/command/with-contenv bash
 
 source /assets/functions/00-container
-PROCESS_NAME="zt-net"
+SERVICE_NAME="zt-net"
 source /assets/defaults/20-zerotier
 source /assets/functions/20-zerotier
 check_container_initialized

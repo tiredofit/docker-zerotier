@@ -2,7 +2,7 @@
 
 source /assets/functions/00-container
 prepare_service
-PROCESS_NAME="zerotier"
+SERVICE_NAME="zerotier"
 setup_container_mode
 bootstrap_filesystem
 add_bash_completion
