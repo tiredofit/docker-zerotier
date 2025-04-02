@@ -1,0 +1,11 @@
+# File generated on 2025-04-02 03:32:03 PDT
+127.0.0.1 localhost
+# Network: d06d0877e069285c
+10.121.15.23	beef.tiredofit.ca	c93092bf63.tiredofit.ca	#d06d0877e069285c
+10.121.15.64	butcher.tiredofit.ca	340f6af8ed.tiredofit.ca	#d06d0877e069285c
+10.121.15.230	dc-phone.tiredofit.ca	dfc7022c0b.tiredofit.ca	#d06d0877e069285c
+10.121.15.109	expedition.tiredofit.ca	0c81eb4a6b.tiredofit.ca	#d06d0877e069285c
+10.121.15.60	net-willemar.tiredofit.ca	88418a6f18.tiredofit.ca	#d06d0877e069285c
+10.121.15.114	nomad.tiredofit.ca	627bd3f4e9.tiredofit.ca	#d06d0877e069285c
+10.121.15.63	tentacle.tiredofit.ca	4c852d1a24.tiredofit.ca	#d06d0877e069285c
+::1 localhost ip6-localhost ip6-loopback
