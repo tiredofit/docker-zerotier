@@ -54,6 +54,7 @@ RUN source assets/functions/00-container && \
                     jq \
                     moreutils \
                     #unbound-libs \
+                    util-linux-misc \
                     && \
     \
     package install .zerotier-build-deps \

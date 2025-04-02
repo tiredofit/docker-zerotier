@@ -1,3 +1,10 @@
+## 1.0.1 2025-04-02 <dave at tiredofit dot ca>
+
+   ### Changed
+      - Bugfixes to 1.0.0 release to ztnet-dns-companion script
+      - Add more utils to perform better hosts file mapping
+
+
 ## 1.0.0 2025-04-02 <dave at tiredofit dot ca>
 
 Take note a breaking change paths. Move your zerotier data from /data to /data/zerotier or lose all network information
