@@ -53,18 +53,35 @@ EOF
 }
 
 bootstrap_filesystem() {
-    if [ ! -d "${CONTROLLER_DATA_PATH}" ]; then
-        mkdir -p "${CONTROLLER_DATA_PATH}"
-    fi
-    if [ "$(stat -c %U "${CONTROLLER_DATA_PATH}")" != "zerotier" ] ; then chown zerotier:zerotier "${CONTROLLER_DATA_PATH}" ; fi
-    rm -rf /var/lib/zerotier-one
-    ln -sf "${CONTROLLER_DATA_PATH}" /var/lib/zerotier-one
-
-    if [ ! -d "${LOG_PATH}" ]; then
-        mkdir -p "${LOG_PATH}"
-    fi
-    if [ "$(stat -c %U "${LOG_PATH}")" != "zerotier" ] ; then chown -R zerotier:zerotier "${LOG_PATH}" ; fi
+    case "${1}" in
+        controller )
+            if [ ! -d "${CONTROLLER_DATA_PATH}" ]; then
+                mkdir -p "${CONTROLLER_DATA_PATH}"
+            fi
+            if [ "$(stat -c %U "${CONTROLLER_DATA_PATH}")" != "zerotier" ] ; then chown zerotier:zerotier "${CONTROLLER_DATA_PATH}" ; fi
+            rm -rf /var/lib/zerotier-one
+            ln -sf "${CONTROLLER_DATA_PATH}" /var/lib/zerotier-one
+        ;;
+        dns )
+            mkdir -p /etc/coredns/
+            chown -R coredns:zerotier /etc/coredns/
+            if [ ! -d "${DNS_DATA_PATH}" ]; then
+                mkdir -p "${DNS_DATA_PATH}"
+            fi
+            if [ "$(stat -c %U "${DNS_DATA_PATH}")" != "coredns" ] ; then chown coredns:zerotier "${DNS_DATA_PATH}" ; fi
+        ;;
+        logs )
+            if [ ! -d "${LOG_PATH}" ]; then
+                mkdir -p "${LOG_PATH}"
+            fi
+            if [ "$(stat -c %G "${LOG_PATH}")" != "zerotier" ] ; then chown -R zerotier:zerotier "${LOG_PATH}" ; fi
+        ;;
+        ui )
+            :
+        ;;
+    esac
 }
+
 
 configure_controller() {
     if var_false "${CONTROLLER_ENABLE_METRICS}" ; then ln -sf /dev/null /var/lib/zerotier-one/metrics.prom ; fi
@@ -83,6 +100,15 @@ configure_controller() {
     }
   }
 EOF
+}
+
+configure_dns() {
+    sanity_var ZTNET_API_TOKEN "Personal + Org API Token from ZTNET"
+    set -o posix ; set | grep -E '^(DNS_LISTEN_PORT=|LOG_PATH=|ZTNET_API_HOST=|ZTNET_AUTH_HEADER=|ZT_NETWORKS=)' > /etc/coredns/.env
+    sed -i "s|^DNS_|COREDNS_|g" /etc/coredns/.env
+    s6-setuidgid ${COREDNS_USER} /usr/local/bin/ztnet-dns-companion --format hosts --file
+    s6-setuidgid ${COREDNS_USER} /usr/local/bin/ztnet-dns-companion --format coredns --file
+    echo "${DNS_UPDATE_PERIOD} source /etc/coredns/.env ; s6-setuidgid ${COREDNS_USER} /usr/local/bin/ztnet-dns-companion --file >/dev/null 2>&1" >> /assets/cron/crontab.txt
 }
 
 configure_ui() {
@@ -172,6 +198,10 @@ setup_container_mode() {
                 "controller" )
                     print_debug "Enabling Container Mode for: CONTROLLER"
                     echo "ENABLE_CONTROLLER=TRUE" >> /tmp/.container/toi_zerotier/CONTAINER_MODE
+                ;;
+                "dns" )
+                    print_debug "Enabling Container Mode for: DNS"
+                    echo "ENABLE_DNS=TRUE" >> /tmp/.container/toi_zerotier/CONTAINER_MODE
                 ;;
                 "ui" )
                     print_debug "Enabling Container Mode for: UI"

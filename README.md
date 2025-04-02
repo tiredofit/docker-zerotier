@@ -13,6 +13,7 @@ This will build a Docker Image for [Zerotier One](https://zerotier.com), A virtu
 
 - Includes Zerotier One for setting up virtual private networks
 - Also includes the management console [ZTNET](https://github.com/sinamics/next_ztnet)
+- CoreDNS server included to fetch ip records from Zerotier Networks and serve under custom domains eg `custom.domain.local`
 - Nginx as proxy to ZTNET for logging and authentication
 
 ## Maintainer
@@ -37,6 +38,8 @@ This will build a Docker Image for [Zerotier One](https://zerotier.com), A virtu
     - [Container Options](#container-options)
     - [Controller Options](#controller-options)
     - [UI Options](#ui-options)
+    - [DNS Options](#dns-options)
+      - [Optional](#optional)
   - [Networking](#networking)
 - [Maintenance](#maintenance)
   - [Shell Access](#shell-access)
@@ -119,7 +122,7 @@ Be sure to view the following repositories to understand all the customizable op
 
 | Variable | Description                                                  | Default         | `_FILE` |
 | -------- | ------------------------------------------------------------ | --------------- | ------- |
-| `MODE`   | What mode `CONTROLLER` `UI` `STANDALONE` seperated by commas | `CONTROLLER,UI` |         |
+| `MODE`   | What mode `CONTROLLER` `UI` `DNS` `STANDALONE` seperated by commas | `CONTROLLER,UI` |         |
 
 #### Controller Options
 
@@ -148,6 +151,27 @@ Be sure to view the following repositories to understand all the customizable op
 | `UI_LISTEN_PORT`    | What port for the UI to listen on                  | `3000`                                       |         |
 | `UI_SECRET`         | Random secret for session and cookie storage       | `random`                                     |         |
 | `UI_SITE_NAME`      | Site name to display on UI                         | `ZTNET`                                      |         |
+
+#### DNS Options
+| Variable          | Description                                                                                         | Default                 | `_FILE` |
+| ----------------- | --------------------------------------------------------------------------------------------------- | ----------------------- | ------- |
+| `ZTNET_API_HOST`  | API Hostname of ZTNET Api Server                                                                    | `http://localhost:3000` |
+| `ZTNET_API_TOKEN` | API Token able to fetch information from ZTNET Server                                               |                         |
+| `ZT_NETWORKS`     | Networks as org:dnsname:network (multiple networks separated by comma) eg org123:example.com:net123 | | |
+
+##### Optional
+| Variable                        | Description                                   | Default                             | `_FILE` |
+| ------------------------------- | --------------------------------------------- | ----------------------------------- | ------- |
+| `COREDNS_BIND_ALL`              | Bind CoreDNS to all interfaces                | `false`                             |         |
+| `COREDNS_BIND_LOCALHOST`        | Bind CoreDNS to localhost                     | `true`                              |         |
+| `COREDNS_BIND_ZEROTIER`         | Bind CoreDNS to ZeroTier interfaces           | `true`                              |         |
+| `COREDNS_BIND_IP`               | Bind CoreDNS to specific IP addresses         |                                     |         |
+| `COREDNS_FILE`                  | Path to CoreDNS configuration file            | `/etc/coredns/Corefile`             |         |
+| `COREDNS_CUSTOM_DATA_PATH`      | Path to custom CoreDNS configuration          | `/data/coredns/`                    |         |
+| `COREDNS_LISTEN_PORT`           | CoreDNS listen port                           | `53`                                |         |
+| `COREDNS_ENABLE_FORWARD`        | Enable CoreDNS forwarding                     | `true`                              |         |
+| `COREDNS_FORWARD_MODE`          | CoreDNS forward mode (`system` or `upstream`) | `system`                            |         |
+| `COREDNS_FORWARD_UPSTREAM_HOST` | CoreDNS forward upstream hosts                | `dns://8.8.8.8:53 dns://1.1.1.1:53` |         |
 
 
 ### Networking

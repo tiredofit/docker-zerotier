@@ -1,3 +1,16 @@
+## 1.0.0 2025-04-02 <dave at tiredofit dot ca>
+
+Take note a breaking change paths. Move your zerotier data from /data to /data/zerotier or lose all network information
+
+   ### Added
+      - Introduce new DNS MODE to serve DNS records from ZTNet API. Runs a locally installed CoreDNS server that can be accessed on interfaces or port mapped and resolve hostnames that are entered into the ZTNET Gui from whatever networks have been defined
+      - Introdued log rotation and optimizations to container runtime
+
+   ### Changed
+      - New MODE - DNS
+      - Changed data path from /data to /data/zerotier - make sure you move all preexisting data into this folder, otherwise lose your networks and connectivity.
+
+
 ## 0.47.0 2025-02-21 <dave at tiredofit dot ca>
 
    ### Added

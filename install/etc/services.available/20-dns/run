@@ -1,0 +1,15 @@
+#!/command/with-contenv bash
+
+source /assets/functions/00-container
+PROCESS_NAME="coredns"
+source /assets/defaults/20-zerotier
+source /assets/functions/20-zerotier
+check_container_initialized
+
+liftoff
+
+print_start "Starting CoreDNS ${COREDNS_VERSION}"
+s6-setuidgid ${COREDNS_USER} /usr/local/bin/ztnet-dns-companion --format coredns --file
+s6-setuidgid ${COREDNS_USER} /usr/local/bin/ztnet-dns-companion --format hosts --file
+exec s6-setuidgid "${COREDNS_USER}" coredns \
+                                        -conf /etc/coredns/Corefile | ts -m '%Y-%m-%dT%H:%M.%S' >> ${DNS_LOG_PATH}/${DNS_LOG_FILE}

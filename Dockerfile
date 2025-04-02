@@ -7,8 +7,10 @@ LABEL maintainer="Dave Conroy (github.com/tiredofit)"
 ARG ZEROTIER_VERSION
 ARG ZT_NET_VERSION
 
-ENV ZEROTIER_VERSION=${ZEROTIER_VERSION:-"1.14.2"} \
+ENV COREDNS_VERSION=${COREDNS_VERSION:-"v1.12.1"} \
+    ZEROTIER_VERSION=${ZEROTIER_VERSION:-"1.14.2"} \
     ZT_NET_VERSION=${ZT_NET_VERSION:-"v0.7.3"} \
+    COREDNS_REPO_URL=https://github.com/coredns/coredns \
     ZEROTIER_REPO_URL=https://github.com/zerotier/ZeroTierOne \
     ZT_NET_REPO_URL=https://github.com/sinamics/ztnet \
     NGINX_LOG_ACCESS_LOCATION=/logs/nginx \
@@ -32,8 +34,28 @@ RUN source assets/functions/00-container && \
             -u 2323 zerotier \
             && \
     \
+    addgroup -S -g 5353 coredns && \
+    adduser -D -S -s /sbin/nologin \
+            -h /dev/null \
+            -G coredns \
+            -g "coredns" \
+            -u 5353 coredns \
+            && \
+    \
     package update && \
     package upgrade && \
+    package install .coredns-build-deps \
+                    build-base \
+                    go \
+                    git \
+                    #unbound-dev \
+                    && \
+    package install .coredns-run-deps \
+                    jq \
+                    moreutils \
+                    #unbound-libs \
+                    && \
+    \
     package install .zerotier-build-deps \
                     binutils \
                     build-base \
@@ -47,6 +69,20 @@ RUN source assets/functions/00-container && \
                     libstdc++ \
                     && \
     \
+    clone_git_repo "${COREDNS_REPO_URL}" "${COREDNS_VERSION}" && \
+    sed -i \
+              -e "/k8s_external/d" \
+              -e "/route53/d" \
+              -e "/azure/d" \
+              -e "/clouddns/d" \
+              -e "/etcd/d" \
+              #-e "/whoami:whoami/aunbound:github.com\/coredns\/unbound" \
+         /usr/src/coredns/plugin.cfg && \
+       #go get github.com/coredns/unbound && \
+       #go generate && \
+       make && \
+       mv coredns /usr/local/bin && \
+    cd /usr/src && \
     clone_git_repo "${ZEROTIER_REPO_URL}" "${ZEROTIER_VERSION}" && \
     if [ -d "/build-assets/zerotier/src" ] ; then cp -Rp /build-assets/zerotier/src/* /usr/src/ztnet ; fi; \
     if [ -d "/build-assets/zerotier/scripts" ] ; then for script in /build-assets/zerotier/scripts/*.sh; do echo "** Applying $script"; bash $script; done && \ ; fi ; \
@@ -96,6 +132,7 @@ RUN source assets/functions/00-container && \
                 && \
     \
     package remove \
+                    .coredns-build-deps \
                     .zerotier-build-deps \
                     .ztnet-build-deps \
                     && \
@@ -106,8 +143,8 @@ RUN source assets/functions/00-container && \
             /root/.cache \
             /root/.gitconfig \
             /root/.npm \
-            /root/go
-#            /usr/src/*
+            /root/go \
+            /usr/src/*
 
 EXPOSE 3000
 EXPOSE 9993/udp

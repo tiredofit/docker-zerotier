@@ -4,19 +4,40 @@ source /assets/functions/00-container
 prepare_service
 SERVICE_NAME="zerotier"
 setup_container_mode
-bootstrap_filesystem
+bootstrap_filesystem logs
 add_bash_completion
 
 if [ ! -f "/tmp/.container/container-restart" ] ; then
     if var_true "${ENABLE_CONTROLLER}" ; then
         print_debug "Configuring Controller"
+        bootstrap_filesystem controller
         configure_controller
+        case "${LOG_TYPE,,}" in
+            file )
+                create_logrotate create_logrotate zerotier "${LOG_PATH}"/"${CONTROLLER_LOG_FILE}" zerotier zerotier zerotier
+            ;;
+        esac
     else
         service_stop 20-controller
     fi
 
+    if var_true "${ENABLE_DNS}" ; then
+        print_debug "Configuring DNS"
+        bootstrap_filesystem dns
+        grant_sudo "${COREDNS_USER}" /usr/sbin/zerotier-cli
+        configure_dns
+        case "${LOG_TYPE,,}" in
+            file )
+                create_logrotate create_logrotate coredns "${DNS_LOG_PATH}"/"${DNS_LOG_FILE}" coredns "${COREDNS_USER}" zerotier
+            ;;
+        esac
+    else
+        service_stop 20-dns
+    fi
+
     if var_true "${ENABLE_UI}" ; then
         print_debug "Configuring UI"
+        bootstrap_filesystem ui
         configure_ui
     else
         service_stop 10-nginx
