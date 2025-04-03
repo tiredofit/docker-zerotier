@@ -24,6 +24,8 @@ services:
 
       - CONTROLLER_LISTEN_PORT=9993
 
+      - UI_SECRET=tireodfit
+
       - UI_DB_HOST=zerotier-db
       - UI_DB_PORT=5432
       - UI_DB_NAME=zerotier

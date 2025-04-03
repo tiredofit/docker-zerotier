@@ -120,8 +120,8 @@ Be sure to view the following repositories to understand all the customizable op
 
 #### Container Options
 
-| Variable | Description                                                  | Default         | `_FILE` |
-| -------- | ------------------------------------------------------------ | --------------- | ------- |
+| Variable | Description                                                        | Default         | `_FILE` |
+| -------- | ------------------------------------------------------------------ | --------------- | ------- |
 | `MODE`   | What mode `CONTROLLER` `UI` `DNS` `STANDALONE` seperated by commas | `CONTROLLER,UI` |         |
 
 #### Controller Options
@@ -157,12 +157,12 @@ Be sure to view the following repositories to understand all the customizable op
 | ----------------- | --------------------------------------------------------------------------------------------------- | ----------------------- | ------- |
 | `ZTNET_API_HOST`  | API Hostname of ZTNET Api Server                                                                    | `http://localhost:3000` |
 | `ZTNET_API_TOKEN` | API Token able to fetch information from ZTNET Server                                               |                         |
-| `ZT_NETWORKS`     | Networks as org:dnsname:network (multiple networks separated by comma) eg org123:example.com:net123 | | |
+| `ZT_NETWORKS`     | Networks as org:dnsname:network (multiple networks separated by comma) eg org123:example.com:net123 |                         |         |
 
 ##### Optional
 | Variable                        | Description                                   | Default                             | `_FILE` |
 | ------------------------------- | --------------------------------------------- | ----------------------------------- | ------- |
-| `COREDNS_BIND_ALL`              | Bind CoreDNS to all interfaces                | `false`                             |         |
+| `COREDNS_BIND_ALL`              | Bind CoreDNS to all interfaces                | `true`                             |         |
 | `COREDNS_BIND_LOCALHOST`        | Bind CoreDNS to localhost                     | `true`                              |         |
 | `COREDNS_BIND_ZEROTIER`         | Bind CoreDNS to ZeroTier interfaces           | `true`                              |         |
 | `COREDNS_BIND_IP`               | Bind CoreDNS to specific IP addresses         |                                     |         |
@@ -171,7 +171,7 @@ Be sure to view the following repositories to understand all the customizable op
 | `COREDNS_LISTEN_PORT`           | CoreDNS listen port                           | `53`                                |         |
 | `COREDNS_ENABLE_FORWARD`        | Enable CoreDNS forwarding                     | `true`                              |         |
 | `COREDNS_FORWARD_MODE`          | CoreDNS forward mode (`system` or `upstream`) | `system`                            |         |
-| `COREDNS_FORWARD_UPSTREAM_HOST` | CoreDNS forward upstream hosts                | `dns://8.8.8.8:53 dns://1.1.1.1:53` |         |
+| `COREDNS_FORWARD_UPSTREAM_HOST` | CoreDNS forward upstream hosts                | `dns://1.1.1.1:53 dns://1.0.0.1:53` |         |
 
 
 ### Networking

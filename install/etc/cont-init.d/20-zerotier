@@ -14,7 +14,7 @@ if [ ! -f "/tmp/.container/container-restart" ] ; then
         configure_controller
         case "${LOG_TYPE,,}" in
             file )
-                create_logrotate create_logrotate zerotier "${LOG_PATH}"/"${CONTROLLER_LOG_FILE}" zerotier zerotier zerotier
+                create_logrotate zerotier "${LOG_PATH}"/"${CONTROLLER_LOG_FILE}" zerotier zerotier zerotier
             ;;
         esac
     else
@@ -28,7 +28,7 @@ if [ ! -f "/tmp/.container/container-restart" ] ; then
         configure_dns
         case "${LOG_TYPE,,}" in
             file )
-                create_logrotate create_logrotate coredns "${DNS_LOG_PATH}"/"${DNS_LOG_FILE}" coredns "${COREDNS_USER}" zerotier
+                create_logrotate coredns "${DNS_LOG_PATH}"/"${DNS_LOG_FILE}" coredns "${COREDNS_USER}" zerotier
             ;;
         esac
     else

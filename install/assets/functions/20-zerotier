@@ -106,8 +106,6 @@ configure_dns() {
     sanity_var ZTNET_API_TOKEN "Personal + Org API Token from ZTNET"
     set -o posix ; set | grep -E '^(DNS_LISTEN_PORT=|LOG_PATH=|ZTNET_API_HOST=|ZTNET_AUTH_HEADER=|ZT_NETWORKS=)' > /etc/coredns/.env
     sed -i "s|^DNS_|COREDNS_|g" /etc/coredns/.env
-    s6-setuidgid ${COREDNS_USER} /usr/local/bin/ztnet-dns-companion --format hosts --file
-    s6-setuidgid ${COREDNS_USER} /usr/local/bin/ztnet-dns-companion --format coredns --file
     echo "${DNS_UPDATE_PERIOD} source /etc/coredns/.env ; s6-setuidgid ${COREDNS_USER} /usr/local/bin/ztnet-dns-companion --file >/dev/null 2>&1" >> /assets/cron/crontab.txt
 }
 
@@ -141,29 +139,6 @@ EOF
     envFilename='.env.production'
     nextFolder='/app/.next/'
 
-    #function apply_path {
-    #    # read all config file
-    #    while read line; do
-    #        # no comment or not empty
-    #        if [ "${line:0:1}" == "#" ] || [ "${line}" == "" ]; then
-    #            continue
-    #        fi
-#
-    #        # split
-    #        configName="$(cut -d'=' -f1 <<<"$line")"
-    #        configValue="$(cut -d'=' -f2 <<<"$line")"
-    #        # get system env
-    #        envValue=$(env | grep "^$configName=" | grep -oe '[^=]*$');
-#
-    #        # if config found
-    #        if [ -n "$configValue" ] && [ -n "$envValue" ]; then
-    #            # replace all
-    #            echo "Replace: ${configValue} with: ${envValue}"
-    #            find $nextFolder \( -type d -name .git -prune \) -o -type f -print0 | xargs -0 sed -i "s#$configValue#$envValue#g"
-    #        fi
-    #    done < $envFilename
-    #}
-
     cd /app
     print_info "[ui] Applying migrations to the database"
     silent npx prisma migrate deploy
@@ -175,6 +150,7 @@ EOF
 
     if [ -z "${UI_SECRET}" ]; then
         UI_SECRET=$(openssl rand -base64 32)
+        print_warn "You should set a UI_SECRET environment variable to a secure value"
     fi
 
     echo "NEXTAUTH_URL=\"${UI_SITE_URL}\"" >> /app/.env

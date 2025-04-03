@@ -1,22 +1,22 @@
 #!/command/with-contenv bash
 # ztnet-dns-companion: Contact ZTNET API, and convert a list of authorized network members to hosts(5) or coredns format
 
-if [ -z "${ZTNET_API_TOKEN}" ] ; then
-  echo "ERROR: must set ZTNET_API_TOKEN!"
-  exit 1
+if [ -z "${ZTNET_API_TOKEN}" ]; then
+    echo "ERROR: must set ZTNET_API_TOKEN!"
+    exit 1
 fi
 
 # Load environment variables from the default .env file if it exists
 DEFAULT_ENV_FILE="/etc/coredns/.env"
 if [ -f "$DEFAULT_ENV_FILE" ]; then
-  export $(grep -v '^#' "$DEFAULT_ENV_FILE" | xargs)
+    export $(grep -v '^#' "$DEFAULT_ENV_FILE" | xargs)
 fi
 
 # Default values for variables
 ZTNET_API_HOST=${UI_SITE_URL:-"http://localhost:3000"}
 ZTNET_AUTH_HEADER="x-ztnet-auth: ${ZTNET_API_TOKEN}"
 HOSTS_FILE=${HOSTS_FILE:-"/data/dns/hosts"}
-COREDNS_BIND_ALL=${COREDNS_BIND_ALL:-"false"}
+COREDNS_BIND_ALL=${COREDNS_BIND_ALL:-"true"}
 COREDNS_BIND_LOCALHOST=${COREDNS_BIND_LOCALHOST:-"true"}
 COREDNS_BIND_ZEROTIER=${COREDNS_BIND_ZEROTIER:-"true"}
 COREDNS_FILE=${COREDNS_FILE:-"/etc/coredns/Corefile"}
@@ -24,154 +24,180 @@ COREDNS_CUSTOM_DATA_PATH=${COREDNS_CUSTOM_DATA_PATH:-"/data/coredns/"}
 COREDNS_LISTEN_PORT=${COREDNS_LISTEN_PORT:-"53"}
 COREDNS_ENABLE_FORWARD=${COREDNS_ENABLE_FORWARD:-"true"}
 COREDNS_FORWARD_MODE=${COREDNS_FORWARD_MODE:-"system"}
-COREDNS_FORWARD_UPSTREAM_HOST=${COREDNS_FORWARD_UPSTREAM_HOST:-"dns://8.8.8.8:53 dns://1.1.1.1:53"}
+COREDNS_FORWARD_UPSTREAM_HOST=${COREDNS_FORWARD_UPSTREAM_HOST:-"dns://1.1.1.1:53 dns://1.0.0.1:53"}
 
 set -eo pipefail
 
 show_help() {
-  echo "ztnet-dns-companion: Contact ZTNET API, and convert a list of authorized network members to hosts(5) or coredns format"
-  echo ""
-  echo "Usage: $0 [OPTIONS] [:ORG_NAME[:DNS_NAME]]NETWORK_ID"
-  echo ""
-  echo "Options:"
-  echo "  --format [hosts|coredns]             Specify output format (default: hosts)"
-  echo "  --file                               Write output to file based on format (default: console output)"
-  echo "  --force                              Force writing output to file regardless of changes"
-  echo "  --sort [ip|hostname]                 Specify sorting column (default: hostname)"
-  echo "  --host <API_HOST>                    Specify ZTNET API host (default: http://localhost:3000)"
-  echo "  --token <API_TOKEN>                  Specify ZTNET API token"
-  echo "  --hosts-file <HOSTS_FILE>            Specify path to CoreDNS hosts file (default: /data/dns/hosts)"
-  echo "  --coredns-listen-port <PORT>         Specify CoreDNS listen port (default: 53)"
-  echo "  --coredns-forward-mode <MODE>        Specify CoreDNS forward mode (default: system)"
-  echo "  --coredns-forward-upstream-host <HOSTS> Specify CoreDNS forward upstream hosts (default: dns://8.8.8.8:53 dns://1.1.1.1:53)"
-  echo "  --env <ENV_FILE>                     Load environment variables from the specified file"
-  echo "  --networks <NETWORK_INFO>            Specify networks as org:dnnsname:network (multiple networks separated by comma)"
-  echo "  --help                               Show this help message and exit"
-  echo ""
-  echo "Arguments:"
-  echo "  [:ORG_NAME[:DNS_NAME]NETWORK_ID]     Specify network ID, optionally with organization name and DNS name"
-  echo ""
-  echo "Environment Variables:"
-  echo "  ZTNET_API_TOKEN                      ZTNET API token (required)"
-  echo "  ZTNET_API_HOST                       ZTNET API host (default: http://localhost:3000)"
-  echo "  HOSTS_FILE                           Path to CoreDNS hosts file (default: /data/dns/hosts)"
-  echo "  COREDNS_BIND_ALL                     Bind CoreDNS to all interfaces (default: false)"
-  echo "  COREDNS_BIND_LOCALHOST               Bind CoreDNS to localhost (default: true)"
-  echo "  COREDNS_BIND_ZEROTIER                Bind CoreDNS to ZeroTier interfaces (default: true)"
-  echo "  COREDNS_BIND_IP                      Bind CoreDNS to specific IP addresses (optional)"
-  echo "  COREDNS_FILE                         Path to CoreDNS configuration file (default: /etc/coredns/Corefile)"
-  echo "  COREDNS_CUSTOM_DATA_PATH             Path to custom CoreDNS configuration (default: /data/coredns/)"
-  echo "  COREDNS_LISTEN_PORT                  CoreDNS listen port (default: 53)"
-  echo "  COREDNS_ENABLE_FORWARD               Enable CoreDNS forwarding (default: true)"
-  echo "  COREDNS_FORWARD_MODE                 CoreDNS forward mode (default: system)"
-  echo "  COREDNS_FORWARD_UPSTREAM_HOST        CoreDNS forward upstream hosts (default: dns://8.8.8.8:53 dns://1.1.1.1:53)"
-  echo "  ZT_NETWORKS                          Networks as org:dnsname:network (multiple networks separated by comma)"
-  echo ""
-  echo "COREDNS_FORWARD_MODE Options:"
-  echo "  system  - Use system DNS resolvers (e.g., /etc/resolv.conf)"
-  echo "  upstream - Use specified upstream DNS servers (e.g., dns://8.8.8.8:53 dns://1.1.1.1:53)"
-  echo ""
-  echo "Examples:"
-  echo "  $0 --format hosts orgname1234:example.domain:network1234"
-  echo "  $0 --format coredns --sort ip orgname1234:example.domain:network1234"
-  echo "  $0 --format hosts --file orgname1234:example.domain:network1234"
-  echo "  $0 --format coredns --file --force orgname1234:example.domain:network1234"
-  echo "  $0 --env /path/to/envfile --format hosts --file orgname1234:example.domain:network1234"
-  echo "  $0 --networks orgname1:example1.domain:network1,orgname2:example2.domain:network2 --format hosts --file"
+    echo "ztnet-dns-companion: Contact ZTNET API, and convert a list of authorized network members to hosts(5) or coredns format"
+    echo ""
+    echo "Usage: $0 [OPTIONS] [:ORG_NAME[:DNS_NAME]]NETWORK_ID"
+    echo ""
+    echo "Options:"
+    echo "  --format [hosts|coredns]             Specify output format (default: hosts)"
+    echo "  --file                               Write output to file based on format (default: console output)"
+    echo "  --force                              Force writing output to file regardless of changes"
+    echo "  --sort [ip|hostname]                 Specify sorting column (default: hostname)"
+    echo "  --host <API_HOST>                    Specify ZTNET API host (default: http://localhost:3000)"
+    echo "  --token <API_TOKEN>                  Specify ZTNET API token"
+    echo "  --hosts-file <HOSTS_FILE>            Specify path to CoreDNS hosts file (default: /data/dns/hosts)"
+    echo "  --coredns-listen-port <PORT>         Specify CoreDNS listen port (default: 53)"
+    echo "  --coredns-forward-mode <MODE>        Specify CoreDNS forward mode (default: system)"
+    echo "  --coredns-forward-upstream-host <HOSTS> Specify CoreDNS forward upstream hosts (default: dns://1.1.1.1:53 dns://1.0.0.1:53)"
+    echo "  --env <ENV_FILE>                     Load environment variables from the specified file"
+    echo "  --networks <NETWORK_INFO>            Specify networks as org:dnnsname:network (multiple networks separated by comma)"
+    echo "  --help                               Show this help message and exit"
+    echo ""
+    echo "Arguments:"
+    echo "  [:ORG_NAME[:DNS_NAME]NETWORK_ID]     Specify network ID, optionally with organization name and DNS name"
+    echo ""
+    echo "Environment Variables:"
+    echo "  ZTNET_API_TOKEN                      ZTNET API token (required)"
+    echo "  ZTNET_API_HOST                       ZTNET API host (default: http://localhost:3000)"
+    echo "  HOSTS_FILE                           Path to CoreDNS hosts file (default: /data/dns/hosts)"
+    echo "  COREDNS_BIND_ALL                     Bind CoreDNS to all interfaces (default: false)"
+    echo "  COREDNS_BIND_LOCALHOST               Bind CoreDNS to localhost (default: true)"
+    echo "  COREDNS_BIND_ZEROTIER                Bind CoreDNS to ZeroTier interfaces (default: true)"
+    echo "  COREDNS_BIND_IP                      Bind CoreDNS to specific IP addresses (optional)"
+    echo "  COREDNS_FILE                         Path to CoreDNS configuration file (default: /etc/coredns/Corefile)"
+    echo "  COREDNS_CUSTOM_DATA_PATH             Path to custom CoreDNS configuration (default: /data/coredns/)"
+    echo "  COREDNS_LISTEN_PORT                  CoreDNS listen port (default: 53)"
+    echo "  COREDNS_ENABLE_FORWARD               Enable CoreDNS forwarding (default: true)"
+    echo "  COREDNS_FORWARD_MODE                 CoreDNS forward mode (default: system)"
+    echo "  COREDNS_FORWARD_UPSTREAM_HOST        CoreDNS forward upstream hosts (default: dns://1.1.1.1:53 dns://1.0.0.1:53)"
+    echo "  ZT_NETWORKS                          Networks as org:dnsname:network (multiple networks separated by comma)"
+    echo ""
+    echo "COREDNS_FORWARD_MODE Options:"
+    echo "  system  - Use system DNS resolvers (e.g., /etc/resolv.conf)"
+    echo "  upstream - Use specified upstream DNS servers (e.g., dns://1.1.1.1:53 dns://1.0.0.1:53)"
+    echo ""
+    echo "Examples:"
+    echo "  $0 --format hosts orgname1234:example.domain:network1234"
+    echo "  $0 --format coredns --sort ip orgname1234:example.domain:network1234"
+    echo "  $0 --format hosts --file orgname1234:example.domain:network1234"
+    echo "  $0 --format coredns --file --force orgname1234:example.domain:network1234"
+    echo "  $0 --env /path/to/envfile --format hosts --file orgname1234:example.domain:network1234"
+    echo "  $0 --networks orgname1:example1.domain:network1,orgname2:example2.domain:network2 --format hosts --file"
 }
 
 get_network_info() {
-  if [ -n "${ZTNET_ORGNAME}" ]; then
-    curl -sH "${ZTNET_AUTH_HEADER}" "${ZTNET_API_HOST}/api/v1/org/${ZTNET_ORGNAME}/network/${1}/"
-  else
-    curl -sH "${ZTNET_AUTH_HEADER}" "${ZTNET_API_HOST}/api/v1/network/${1}/"
-  fi
+    if [ -n "${ZTNET_ORGNAME}" ]; then
+        curl -sH "${ZTNET_AUTH_HEADER}" "${ZTNET_API_HOST}/api/v1/org/${ZTNET_ORGNAME}/network/${1}/"
+    else
+        curl -sH "${ZTNET_AUTH_HEADER}" "${ZTNET_API_HOST}/api/v1/network/${1}/"
+    fi
 }
 
 get_network_members() {
-  if [ -n "${ZTNET_ORGNAME}" ]; then
-    curl -sH "${ZTNET_AUTH_HEADER}" "${ZTNET_API_HOST}/api/v1/org/${ZTNET_ORGNAME}/network/${1}/member/"
-  else
-    curl -sH "${ZTNET_AUTH_HEADER}" "${ZTNET_API_HOST}/api/v1/network/${1}/member/"
-  fi
+    if [ -n "${ZTNET_ORGNAME}" ]; then
+        curl -sH "${ZTNET_AUTH_HEADER}" "${ZTNET_API_HOST}/api/v1/org/${ZTNET_ORGNAME}/network/${1}/member/"
+    else
+        curl -sH "${ZTNET_AUTH_HEADER}" "${ZTNET_API_HOST}/api/v1/network/${1}/member/"
+    fi
 }
 
 is_valid_zone() {
-  if [[ $1 =~ ^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$ ]]; then
-    return 0
-  else
-    return 1
-  fi
+    if [[ $1 =~ ^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$ ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 print_ipv6_id() {
-  printf "%s:%s:%s" \
-    $(echo "$1" | cut -c1-2) \
-    $(echo "$1" | cut -c3-6) \
-    $(echo "$1" | cut -c7-10)
+    printf "%s:%s:%s" \
+        $(echo "$1" | cut -c1-2) \
+        $(echo "$1" | cut -c3-6) \
+        $(echo "$1" | cut -c7-10)
 }
 
 print_rfc4193() {
-  printf "fd%s:%s:%s:%s:%s99:93%s" \
-    $(echo "$2" | cut -c1-2) \
-    $(echo "$2" | cut -c3-6) \
-    $(echo "$2" | cut -c7-10) \
-    $(echo "$2" | cut -c11-14) \
-    $(echo "$2" | cut -c15-16) \
-    $(print_ipv6_id "$1")
+    printf "fd%s:%s:%s:%s:%s99:93%s" \
+        $(echo "$2" | cut -c1-2) \
+        $(echo "$2" | cut -c3-6) \
+        $(echo "$2" | cut -c7-10) \
+        $(echo "$2" | cut -c11-14) \
+        $(echo "$2" | cut -c15-16) \
+        $(print_ipv6_id "$1")
 }
 
 print_6plane() {
-  local TOP=${2:0:8}
-  local BOT=${2:9-16}
-  local hashed=$(printf '%x\n' "$(( 0x$TOP ^ 0x$BOT ))")
+    local TOP=${2:0:8}
+    local BOT=${2:9-16}
+    local hashed=$(printf '%x\n' "$((0x$TOP ^ 0x$BOT))")
 
-  printf "fc%s:%s:%s%s:0000:0000:0001" \
-    $(echo "$hashed" | cut -c1-2) \
-    $(echo "$hashed" | cut -c3-6) \
-    $(echo "$hashed" | cut -c7-8) \
-    $(print_ipv6_id "$1")
+    printf "fc%s:%s:%s%s:0000:0000:0001" \
+        $(echo "$hashed" | cut -c1-2) \
+        $(echo "$hashed" | cut -c3-6) \
+        $(echo "$hashed" | cut -c7-8) \
+        $(print_ipv6_id "$1")
 }
 
 run_zerotier_cli() {
-  ## Check if zerotier-cli is running and online
-  set +e
-  set +o pipefail
+    ## Check if zerotier-cli is running and online
+    set +e
+    set +o pipefail
 
-  # First, check the status with 'info'
-  if output=$(zerotier-cli info 2>&1); then
-    # Check if the output contains "ONLINE"
-    if echo "$output" | grep -q "ONLINE"; then
-      # If ONLINE, run the command with the provided arguments and return its output
-      zerotier-cli "$@"
+    # First, check the status with 'info'
+    if output=$(zerotier-cli info 2>&1); then
+        # Check if the output contains "ONLINE"
+        if echo "$output" | grep -q "ONLINE"; then
+            # If ONLINE, run the command with the provided arguments and return its output
+            zerotier-cli "$@"
+        else
+            echo "" # Return an empty string if not ONLINE
+        fi
     else
-      echo ""  # Return an empty string if not ONLINE
+        # If the command failed, try with sudo
+        if output=$(sudo zerotier-cli info 2>&1); then
+            if echo "$output" | grep -q "ONLINE"; then
+                # If ONLINE, run the command with the provided arguments and return its output
+                sudo zerotier-cli "$@"
+            else
+                echo "" # Return an empty string if not ONLINE
+            fi
+        else
+            echo "" # Return an empty string if the command fails
+        fi
     fi
-  else
-    # If the command failed, try with sudo
-    if output=$(sudo zerotier-cli info 2>&1); then
-      if echo "$output" | grep -q "ONLINE"; then
-        # If ONLINE, run the command with the provided arguments and return its output
-        sudo zerotier-cli "$@"
-      else
-        echo ""  # Return an empty string if not ONLINE
-      fi
-    else
-      echo ""  # Return an empty string if the command fails
-    fi
-  fi
 
-  set -eo pipefail
+    set -eo pipefail
 }
 
-if [ "$1" = "" ] && [ -z "${ZT_NETWORKS}" ] ; then
-  echo "ERROR: must provide at least one network ID!"
-  exit 1
+validate_api() {
+    local retries=$1
+    local delay=$2
+    local attempt=0
+    local api_status
+
+    while [ $attempt -lt $retries ]; do
+        api_status=$(curl -Ssl -L -X GET "${ZTNET_API_HOST}/api/v1/stats" \
+            -H "Accept: application/json" \
+            -H "${ZTNET_AUTH_HEADER}" \
+            --write-out '%{http_code}' \
+            --output /dev/null)
+
+        if [ "$api_status" -eq 200 ]; then
+            return 0
+        fi
+
+        #echo "WARNING: Unable to access API (HTTP status: $api_status). Retrying in $delay seconds..."
+        attempt=$((attempt + 1))
+        sleep $delay
+    done
+
+    echo "ERROR: Unable to access API or invalid API token after $retries attempts."
+    exit 1
+}
+
+if [ "$1" = "" ] && [ -z "${ZT_NETWORKS}" ]; then
+    echo "ERROR: must provide at least one network ID!"
+    exit 1
 fi
 
 if [[ "$1" == "--help" ]]; then
-  show_help
-  exit 0
+    show_help
+    exit 0
 fi
 
 ipv4_lines=("127.0.0.1 localhost")
@@ -185,339 +211,340 @@ FORCE_WRITE=false
 ENV_FILE=""
 
 while [[ $# -gt 0 ]]; do
-  case "$1" in
+    case "$1" in
     --format)
-      if [ -n "$2" ]; then
-        OUTPUT_FORMAT="$2"
-        shift 2
-      else
-        echo "ERROR: --format requires an argument"
-        exit 1
-      fi
-      ;;
-    --file)
-      OUTPUT_TO_FILE=true
-      shift
-      ;;
-    --force)
-      FORCE_WRITE=true
-      shift
-      ;;
-    --sort)
-      if [ -n "$2" ]; then
-        SORT_COLUMN="$2"
-        shift 2
-      else
-        echo "ERROR: --sort requires an argument"
-        exit 1
-      fi
-      ;;
-    --host)
-      if [ -n "$2" ]; then
-        ZTNET_API_HOST="$2"
-        shift 2
-      else
-        echo "ERROR: --host requires an argument"
-        exit 1
-      fi
-      ;;
-    --token)
-      if [ -n "$2" ]; then
-        ZTNET_API_TOKEN="$2"
-        ZTNET_AUTH_HEADER="x-ztnet-auth: ${ZTNET_API_TOKEN}"
-        shift 2
-      else
-        echo "ERROR: --token requires an argument"
-        exit 1
-      fi
-      ;;
-    --hosts-file)
-      if [ -n "$2" ]; then
-        HOSTS_FILE="$2"
-        shift 2
-      else
-        echo "ERROR: --hosts-file requires an argument"
-        exit 1
-      fi
-      ;;
-    --coredns-listen-port)
-      if [ -n "$2" ]; then
-        COREDNS_LISTEN_PORT="$2"
-        shift 2
-      else
-        echo "ERROR: --coredns-listen-port requires an argument"
-        exit 1
-      fi
-      ;;
-    --coredns-forward-mode)
-      if [ -n "$2" ]; then
-        COREDNS_ENABLE_FORWARD=true
-        COREDNS_FORWARD_MODE="$2"
-        shift 2
-      else
-        echo "ERROR: --coredns-forward-mode requires an argument"
-        exit 1
-      fi
-      ;;
-    --coredns-forward-upstream-host)
-      if [ -n "$2" ]; then
-        COREDNS_ENABLE_FORWARD=true
-        COREDNS_FORWARD_UPSTREAM_HOST="$2"
-        shift 2
-      else
-        echo "ERROR: --coredns-forward-upstream-host requires an argument"
-        exit 1
-      fi
-      ;;
-    --env)
-      if [ -n "$2" ]; then
-        ENV_FILE="$2"
-        if [ -f "$ENV_FILE" ]; then
-          export $(grep -v '^#' "$ENV_FILE" | xargs)
+        if [ -n "$2" ]; then
+            OUTPUT_FORMAT="$2"
+            shift 2
         else
-          echo "ERROR: Specified environment file '$ENV_FILE' does not exist!"
-          exit 1
+            echo "ERROR: --format requires an argument"
+            exit 1
         fi
-        shift 2
-      else
-        echo "ERROR: --env requires an argument"
-        exit 1
-      fi
-      ;;
+        ;;
+    --file)
+        OUTPUT_TO_FILE=true
+        shift
+        ;;
+    --force)
+        FORCE_WRITE=true
+        shift
+        ;;
+    --sort)
+        if [ -n "$2" ]; then
+            SORT_COLUMN="$2"
+            shift 2
+        else
+            echo "ERROR: --sort requires an argument"
+            exit 1
+        fi
+        ;;
+    --host)
+        if [ -n "$2" ]; then
+            ZTNET_API_HOST="$2"
+            shift 2
+        else
+            echo "ERROR: --host requires an argument"
+            exit 1
+        fi
+        ;;
+    --token)
+        if [ -n "$2" ]; then
+            ZTNET_API_TOKEN="$2"
+            ZTNET_AUTH_HEADER="x-ztnet-auth: ${ZTNET_API_TOKEN}"
+            shift 2
+        else
+            echo "ERROR: --token requires an argument"
+            exit 1
+        fi
+        ;;
+    --hosts-file)
+        if [ -n "$2" ]; then
+            HOSTS_FILE="$2"
+            shift 2
+        else
+            echo "ERROR: --hosts-file requires an argument"
+            exit 1
+        fi
+        ;;
+    --coredns-listen-port)
+        if [ -n "$2" ]; then
+            COREDNS_LISTEN_PORT="$2"
+            shift 2
+        else
+            echo "ERROR: --coredns-listen-port requires an argument"
+            exit 1
+        fi
+        ;;
+    --coredns-forward-mode)
+        if [ -n "$2" ]; then
+            COREDNS_ENABLE_FORWARD=true
+            COREDNS_FORWARD_MODE="$2"
+            shift 2
+        else
+            echo "ERROR: --coredns-forward-mode requires an argument"
+            exit 1
+        fi
+        ;;
+    --coredns-forward-upstream-host)
+        if [ -n "$2" ]; then
+            COREDNS_ENABLE_FORWARD=true
+            COREDNS_FORWARD_UPSTREAM_HOST="$2"
+            shift 2
+        else
+            echo "ERROR: --coredns-forward-upstream-host requires an argument"
+            exit 1
+        fi
+        ;;
+    --env)
+        if [ -n "$2" ]; then
+            ENV_FILE="$2"
+            if [ -f "$ENV_FILE" ]; then
+                export $(grep -v '^#' "$ENV_FILE" | xargs)
+            else
+                echo "ERROR: Specified environment file '$ENV_FILE' does not exist!"
+                exit 1
+            fi
+            shift 2
+        else
+            echo "ERROR: --env requires an argument"
+            exit 1
+        fi
+        ;;
     --networks)
-      if [ -n "$2" ]; then
-        IFS=',' read -ra NETWORKS <<< "$2"
-        shift 2
-      else
-        echo "ERROR: --networks requires an argument"
-        exit 1
-      fi
-      ;;
+        if [ -n "$2" ]; then
+            IFS=',' read -ra NETWORKS <<<"$2"
+            shift 2
+        else
+            echo "ERROR: --networks requires an argument"
+            exit 1
+        fi
+        ;;
     *)
-      NETWORKS+=("$1")
-      shift
-      ;;
-  esac
+        NETWORKS+=("$1")
+        shift
+        ;;
+    esac
 done
 
 if [ -z "${NETWORKS[*]}" ]; then
-  if [ -n "$ZT_NETWORKS" ]; then
-    IFS=',' read -ra NETWORKS <<< "$ZT_NETWORKS"
-  else
-    echo "ERROR: must provide at least one network ID!"
-    exit 1
-  fi
+    if [ -n "$ZT_NETWORKS" ]; then
+        IFS=',' read -ra NETWORKS <<<"$ZT_NETWORKS"
+    else
+        echo "ERROR: must provide at least one network ID!"
+        exit 1
+    fi
 fi
 
 ADDRS=()
 
 for NETWORK in "${NETWORKS[@]}"; do
-  mapfile -td \: FIELDS < <(printf "%s\0" "$NETWORK")
-  if [ ${#FIELDS[@]} -eq 2 ]; then
-    ZTNET_DNSNAME="${FIELDS[0]}"
-    ZTNET_NETWORK="${FIELDS[1]}"
-    unset ZTNET_ORGNAME
-  elif [ ${#FIELDS[@]} -eq 3 ]; then
-    ZTNET_ORGNAME="${FIELDS[0]}"
-    ZTNET_DNSNAME="${FIELDS[1]}"
-    ZTNET_NETWORK="${FIELDS[2]}"
-  else
-    echo "ERROR: Invalid network format '$NETWORK'"
-    exit 1
-  fi
+    mapfile -td \: FIELDS < <(printf "%s\0" "$NETWORK")
+    if [ ${#FIELDS[@]} -eq 2 ]; then
+        ZTNET_DNSNAME="${FIELDS[0]}"
+        ZTNET_NETWORK="${FIELDS[1]}"
+        unset ZTNET_ORGNAME
+    elif [ ${#FIELDS[@]} -eq 3 ]; then
+        ZTNET_ORGNAME="${FIELDS[0]}"
+        ZTNET_DNSNAME="${FIELDS[1]}"
+        ZTNET_NETWORK="${FIELDS[2]}"
+    else
+        echo "ERROR: Invalid network format '$NETWORK'"
+        exit 1
+    fi
 
-  # Check if the zone name is valid
-  if [ -n "$ZTNET_DNSNAME" ] && ! is_valid_zone "$ZTNET_DNSNAME"; then
-    echo "ERROR: Invalid domain name '$ZTNET_DNSNAME'"
-    exit 1
-  fi
+    # Check if the zone name is valid
+    if [ -n "$ZTNET_DNSNAME" ] && ! is_valid_zone "$ZTNET_DNSNAME"; then
+        echo "ERROR: Invalid domain name '$ZTNET_DNSNAME'"
+        exit 1
+    fi
 
-  DNSNAMES+=("$ZTNET_DNSNAME")
+    DNSNAMES+=("$ZTNET_DNSNAME")
 
-  netmembers=$(get_network_members "$ZTNET_NETWORK")
-  netinfo=$(get_network_info "$ZTNET_NETWORK")
+    validate_api 3 5
+    netmembers=$(get_network_members "$ZTNET_NETWORK")
+    netinfo=$(get_network_info "$ZTNET_NETWORK")
 
-  # check if "error" is in the response
-  if [[ "$netinfo" == *"error"* ]]; then
-    echo "ERROR GET Network: $netinfo"
-    exit 1
-  fi
+    # check if "error" is in the response
+    if [[ "$netinfo" == *"error"* ]]; then
+        echo "ERROR GET Network: $netinfo"
+        exit 1
+    fi
 
-  # check if "error" is in the response
-  if [[ "$netmembers" == *"error"* ]]; then
-    echo "ERROR GET Network Members: $netmembers"
-    exit 1
-  fi
+    # check if "error" is in the response
+    if [[ "$netmembers" == *"error"* ]]; then
+        echo "ERROR GET Network Members: $netmembers"
+        exit 1
+    fi
 
-  joined=$(echo "$netmembers" | jq '.[] | select(.authorized == true) | { name: (.name | gsub(" "; "_")), id: .id, ips: .ipAssignments }')
+    joined=$(echo "$netmembers" | jq '.[] | select(.authorized == true) | { name: (.name | gsub(" "; "_")), id: .id, ips: .ipAssignments }')
 
-  v6conf=$(echo "$netinfo" | jq -c '.v6AssignMode')
-  sixplane=$(echo "$v6conf" | jq -r '.["6plane"]')
-  rfc4193=$(echo "$v6conf" | jq -r '.rfc4193')
+    v6conf=$(echo "$netinfo" | jq -c '.v6AssignMode')
+    sixplane=$(echo "$v6conf" | jq -r '.["6plane"]')
+    rfc4193=$(echo "$v6conf" | jq -r '.rfc4193')
 
-  ipv4_lines+=("# Network: $ZTNET_NETWORK")
+    ipv4_lines+=("# Network: $ZTNET_NETWORK")
 
-  network_ipv4_lines=()
-  network_ipv6_lines=()
+    network_ipv4_lines=()
+    network_ipv6_lines=()
 
-  for entry in $(echo "$joined" | jq -c '.'); do
-    nodeid=$(echo "$entry" | jq -r '.id')
-    nodename=$(echo "$entry" | jq -r '.name')
+    for entry in $(echo "$joined" | jq -c '.'); do
+        nodeid=$(echo "$entry" | jq -r '.id')
+        nodename=$(echo "$entry" | jq -r '.name')
 
-    for ipv4_address in $(echo "$entry" | jq -r '.ips[]'); do
-      line=$(printf "%s\t%s\t%s\t#%s" \
-        "$ipv4_address" \
-        "$nodename.$ZTNET_DNSNAME" \
-        "$nodeid.$ZTNET_DNSNAME" \
-        "$ZTNET_NETWORK")
+        for ipv4_address in $(echo "$entry" | jq -r '.ips[]'); do
+            line=$(printf "%s\t%s\t%s\t#%s" \
+                "$ipv4_address" \
+                "$nodename.$ZTNET_DNSNAME" \
+                "$nodeid.$ZTNET_DNSNAME" \
+                "$ZTNET_NETWORK")
 
-      network_ipv4_lines+=("$line")
+            network_ipv4_lines+=("$line")
+        done
     done
-  done
 
-  for entry in $(echo "$joined" | jq -c '.'); do
-    nodeid=$(echo "$entry" | jq -r '.id')
+    for entry in $(echo "$joined" | jq -c '.'); do
+        nodeid=$(echo "$entry" | jq -r '.id')
 
-    if [ "${rfc4193}" = "true" ]; then
-      line=$(printf "%s\t%s.%s\t%s\t#%s" \
-        $(print_rfc4193 "$nodeid" "$ZTNET_NETWORK") \
-        $(echo "$entry" | jq -r '.name') \
-        "$ZTNET_DNSNAME" \
-        "$nodeid.$ZTNET_DNSNAME" \
-        "$ZTNET_NETWORK")
-      network_ipv6_lines+=("$line")
+        if [ "${rfc4193}" = "true" ]; then
+            line=$(printf "%s\t%s.%s\t%s\t#%s" \
+                $(print_rfc4193 "$nodeid" "$ZTNET_NETWORK") \
+                $(echo "$entry" | jq -r '.name') \
+                "$ZTNET_DNSNAME" \
+                "$nodeid.$ZTNET_DNSNAME" \
+                "$ZTNET_NETWORK")
+            network_ipv6_lines+=("$line")
+        fi
+
+        if [ "${sixplane}" = "true" ]; then
+            line=$(printf "%s\t%s.%s\t%s\t#%s" \
+                $(print_6plane "$nodeid" "$ZTNET_NETWORK") \
+                $(echo "$entry" | jq -r '.name') \
+                "$ZTNET_DNSNAME" \
+                "$nodeid.$ZTNET_DNSNAME" \
+                "$ZTNET_NETWORK")
+            network_ipv6_lines+=("$line")
+        fi
+    done
+
+    # Sort the lines based on the selected column
+    if [ "$SORT_COLUMN" == "hostname" ]; then
+        IFS=$'\n' sorted_network_ipv4_lines=($(sort -k2 <<<"${network_ipv4_lines[*]}"))
+        IFS=$'\n' sorted_network_ipv6_lines=($(sort -k2 <<<"${network_ipv6_lines[*]}"))
+    else
+        IFS=$'\n' sorted_network_ipv4_lines=($(sort -t$'\t' -k1,1V <<<"${network_ipv4_lines[*]}"))
+        IFS=$'\n' sorted_network_ipv6_lines=($(sort -t$'\t' -k1,1V <<<"${network_ipv6_lines[*]}"))
     fi
+    unset IFS
 
-    if [ "${sixplane}" = "true" ]; then
-      line=$(printf "%s\t%s.%s\t%s\t#%s" \
-        $(print_6plane "$nodeid" "$ZTNET_NETWORK") \
-        $(echo "$entry" | jq -r '.name') \
-        "$ZTNET_DNSNAME" \
-        "$nodeid.$ZTNET_DNSNAME" \
-        "$ZTNET_NETWORK")
-      network_ipv6_lines+=("$line")
-    fi
-  done
+    ipv4_lines+=("${sorted_network_ipv4_lines[@]}")
+    ipv6_lines+=("${sorted_network_ipv6_lines[@]}")
 
-  # Sort the lines based on the selected column
-  if [ "$SORT_COLUMN" == "hostname" ]; then
-    IFS=$'\n' sorted_network_ipv4_lines=($(sort -k2 <<<"${network_ipv4_lines[*]}"))
-    IFS=$'\n' sorted_network_ipv6_lines=($(sort -k2 <<<"${network_ipv6_lines[*]}"))
-  else
-    IFS=$'\n' sorted_network_ipv4_lines=($(sort -t$'\t' -k1,1V <<<"${network_ipv4_lines[*]}"))
-    IFS=$'\n' sorted_network_ipv6_lines=($(sort -t$'\t' -k1,1V <<<"${network_ipv6_lines[*]}"))
-  fi
-  unset IFS
-
-  ipv4_lines+=("${sorted_network_ipv4_lines[@]}")
-  ipv6_lines+=("${sorted_network_ipv6_lines[@]}")
-
-  addrs=$(run_zerotier_cli listnetworks -j | \
-      jq -r ".[] | select(.nwid == \"$ZTNET_NETWORK\") |
+    addrs=$(run_zerotier_cli listnetworks -j |
+        jq -r ".[] | select(.nwid == \"$ZTNET_NETWORK\") |
              .assignedAddresses | .[]")
 
-  ADDRS+=("  # $ZTNET_DNSNAME")
-  for addr in $addrs; do
-    addr=${addr::-3}
-    ADDRS+=("  bind $addr")
-  done
-  ADDRS+=("")
+    ADDRS+=("  # $ZTNET_DNSNAME")
+    for addr in $addrs; do
+        addr=${addr::-3}
+        ADDRS+=("  bind $addr")
+    done
+    ADDRS+=("")
 done
 
 timestamp_comment="# File generated on $(TZ=$TIMEZONE date +'%Y-%m-%d %H:%M:%S %Z')"
 
 write_output() {
-  local file_path=$1
-  local new_content="$2"
+    local file_path=$1
+    local new_content="$2"
 
-  if [ "$FORCE_WRITE" = true ]; then
-    echo "$new_content" > "$file_path"
-    echo "Output written to $file_path"
-    return
-  fi
+    if [ "$FORCE_WRITE" = true ]; then
+        echo "$new_content" >"$file_path"
+        echo "Output written to $file_path"
+        return
+    fi
 
-  if [ -f "$file_path" ]; then
-    existing_content=$(cat "$file_path")
-  else
-    existing_content=""
-  fi
+    if [ -f "$file_path" ]; then
+        existing_content=$(cat "$file_path")
+    else
+        existing_content=""
+    fi
 
-  if [ "$existing_content" != "$new_content" ]; then
-    echo "$new_content" > "$file_path"
-    #echo "Output written to $file_path"
-  else
-    :
-    #echo "No changes detected in $file_path"
-  fi
+    if [ "$existing_content" != "$new_content" ]; then
+        echo "$new_content" >"$file_path"
+        #echo "Output written to $file_path"
+    else
+        :
+        #echo "No changes detected in $file_path"
+    fi
 }
 
 case "${OUTPUT_FORMAT,,}" in
-  hosts )
+hosts)
     output_content=$(
-      # echo "$timestamp_comment"
-      for x in "${ipv4_lines[@]}"; do printf "%s\n" "$x"; done
-      for x in "${ipv6_lines[@]}"; do printf "%s\n" "$x"; done
+        # echo "$timestamp_comment"
+        for x in "${ipv4_lines[@]}"; do printf "%s\n" "$x"; done
+        for x in "${ipv6_lines[@]}"; do printf "%s\n" "$x"; done
     )
     if [ "$OUTPUT_TO_FILE" = true ]; then
-      write_output "$HOSTS_FILE" "$output_content"
+        write_output "$HOSTS_FILE" "$output_content"
     else
-      echo "$output_content" | column -t | sed  "1i $timestamp_comment"
+        echo "$output_content" | column -t | sed "1i $timestamp_comment"
     fi
-  ;;
-  coredns )
+    ;;
+coredns)
     output_content=$(
-      echo "$timestamp_comment"
-      echo ".:${COREDNS_LISTEN_PORT} {"
-      if [ "${COREDNS_BIND_LOCALHOST,,}" = "true" ] ; then
-        echo "  # localhost"
-        echo "  bind 127.0.0.1 ::1"
-      fi
-      if [ "${COREDNS_BIND_ALL,,}" = "true" ] ; then
-        echo "  # any interface"
-        echo "  bind 0.0.0.0 ::"
-      fi
-      if [ -n "${COREDNS_BIND_IP}" ]; then
-        echo "  # COREDNS_BIND_IP env variable"
-        echo "  bind ${COREDNS_BIND_IP}"
-      fi
-      if [ "${COREDNS_BIND_ZEROTIER,,}" = "true" ] ; then
-        for x in "${ADDRS[@]}"; do
-          printf "%s\n" "$x"
-        done
-      fi
-      echo
-      echo "  # handle specific domains via hosts, otherwise fallthrough"
-      echo "  hosts ${HOSTS_FILE} ${DNSNAMES[@]} {"
-      echo "    fallthrough"
-      echo "  }"
-      if [ "${COREDNS_ENABLE_FORWARD,,}" = "true" ]; then
-        case "${COREDNS_FORWARD_MODE,,}" in
-            upstream )
-              echo "  forward . ${COREDNS_FORWARD_UPSTREAM_HOST}"
-            ;;
-            system )
-               echo "  forward . /etc/resolv.conf"
-            ;;
-        esac
-      fi
-      echo "  log"
-      echo "  errors"
-      echo "  cache 30"
-      echo "  loop"
-      echo "  reload"
-      if [ -d "${COREDNS_CUSTOM_DATA_FILE}" ] ; then
-        echo "  import ${COREDNS_CUSTOM_DATA_FILE}"
-      fi
-      echo "}"
+        echo "$timestamp_comment"
+        echo ".:${COREDNS_LISTEN_PORT} {"
+        if [ "${COREDNS_BIND_LOCALHOST,,}" = "true" ]; then
+            echo "  # localhost"
+            echo "  bind 127.0.0.1 ::1"
+        fi
+        if [ "${COREDNS_BIND_ALL,,}" = "true" ]; then
+            echo "  # any interface"
+            echo "  bind 0.0.0.0 ::"
+        fi
+        if [ -n "${COREDNS_BIND_IP}" ]; then
+            echo "  # COREDNS_BIND_IP env variable"
+            echo "  bind ${COREDNS_BIND_IP}"
+        fi
+        if [ "${COREDNS_BIND_ZEROTIER,,}" = "true" ]; then
+            for x in "${ADDRS[@]}"; do
+                printf "%s\n" "$x"
+            done
+        fi
+        echo
+        echo "  # handle specific domains via hosts, otherwise fallthrough"
+        echo "  hosts ${HOSTS_FILE} ${DNSNAMES[@]} {"
+        echo "    fallthrough"
+        echo "  }"
+        if [ "${COREDNS_ENABLE_FORWARD,,}" = "true" ]; then
+            case "${COREDNS_FORWARD_MODE,,}" in
+            upstream)
+                echo "  forward . ${COREDNS_FORWARD_UPSTREAM_HOST}"
+                ;;
+            system)
+                echo "  forward . /etc/resolv.conf"
+                ;;
+            esac
+        fi
+        echo "  log"
+        echo "  errors"
+        echo "  cache 30"
+        echo "  loop"
+        echo "  reload"
+        if [ -d "${COREDNS_CUSTOM_DATA_FILE}" ]; then
+            echo "  import ${COREDNS_CUSTOM_DATA_FILE}"
+        fi
+        echo "}"
     )
     if [ "$OUTPUT_TO_FILE" = true ]; then
-      write_output "$COREDNS_FILE" "$output_content"
+        write_output "$COREDNS_FILE" "$output_content"
     else
-      echo "$output_content"
+        echo "$output_content"
     fi
-  ;;
-  * )
+    ;;
+*)
     echo "ERROR: Unknown output format '${OUTPUT_FORMAT}'"
     exit 1
-  ;;
+    ;;
 esac

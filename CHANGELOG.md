@@ -1,3 +1,11 @@
+## 1.0.2 2025-04-03 <dave at tiredofit dot ca>
+
+   ### Added
+      - Add some safety nets for DNS mode checking if API is live before proceeding
+      - Add warning with UI_SECRET not set
+      - Minor cleanup
+
+
 ## 1.0.1 2025-04-02 <dave at tiredofit dot ca>
 
    ### Changed

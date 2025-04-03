@@ -5,10 +5,22 @@ PROCESS_NAME="coredns"
 source /assets/defaults/20-zerotier
 source /assets/functions/20-zerotier
 check_container_initialized
+setup_container_mode
 
 liftoff
 
+if var_true "${ENABLE_UI}" ; then
+    while true; do
+        if pgrep "next-server" > /dev/null; then
+            break
+        else
+            sleep 1
+        fi
+    done
+fi
+
 print_start "Starting CoreDNS ${COREDNS_VERSION}"
+sleep 1
 s6-setuidgid ${COREDNS_USER} /usr/local/bin/ztnet-dns-companion --format coredns --file
 s6-setuidgid ${COREDNS_USER} /usr/local/bin/ztnet-dns-companion --format hosts --file
 exec s6-setuidgid "${COREDNS_USER}" coredns \
