@@ -19,9 +19,18 @@ if var_true "${ENABLE_UI}" ; then
     done
 fi
 
-print_start "Starting CoreDNS ${COREDNS_VERSION}"
 sleep 1
-s6-setuidgid ${COREDNS_USER} /usr/local/bin/ztnet-dns-companion --format coredns --file
-s6-setuidgid ${COREDNS_USER} /usr/local/bin/ztnet-dns-companion --format hosts --file
-exec s6-setuidgid "${COREDNS_USER}" coredns \
+s6-setuidgid ${DNS_USER} /usr/local/bin/ztnet-dns-companion --format coredns --file
+if [ "${?}" = "0" ]; then
+    s6-setuidgid ${DNS_USER} /usr/local/bin/ztnet-dns-companion --format hosts --file
+fi
+
+if [ -f /etc/coredns/Corefile ] ; then
+    print_start "Starting CoreDNS ${COREDNS_VERSION}"
+    exec s6-setuidgid "${DNS_USER}" coredns \
                                         -conf /etc/coredns/Corefile | ts -m '%Y-%m-%dT%H:%M.%S' >> ${DNS_LOG_PATH}/${DNS_LOG_FILE}
+
+else
+    print_error "No CoreDNS Configuration found, disabling DNS service"
+    s6-svc -d /var/run/s6/legacy-services/20-dns
+fi

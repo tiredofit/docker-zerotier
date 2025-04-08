@@ -1,7 +1,7 @@
 #!/command/with-contenv bash
 
 source /assets/functions/00-container
-PROCESS_NAME="zerotier-controller"
+PROCESS_NAME="zerotier-client"
 source /assets/defaults/20-zerotier
 source /assets/functions/20-zerotier
 check_container_initialized
@@ -9,4 +9,4 @@ check_container_initialized
 liftoff
 
 print_start "Starting Zerotier One ${ZEROTIER_VERSION}"
-silent exec s6-setuidgid "${CONTROLLER_USER}" zerotier-one ${CONTROLLER_ARGS}
+silent exec s6-setuidgid "${CLIENT_USER}" zerotier-one ${CLIENT_ARGS}

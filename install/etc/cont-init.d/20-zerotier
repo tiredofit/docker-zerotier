@@ -8,13 +8,34 @@ bootstrap_filesystem logs
 add_bash_completion
 
 if [ ! -f "/tmp/.container/container-restart" ] ; then
+    if var_true "${ENABLE_CLIENT}" ; then
+        if var_true "${ENABLE_CONTROLLER}" ; then
+            print_error "Can't have both MODE CONTROLLER and CLIENT at once"
+            exit 1
+        fi
+        print_debug "Configuring Client"
+        bootstrap_filesystem client
+        configure_controller
+        case "${LOG_TYPE,,}" in
+            file )
+                create_logrotate zerotier-client "${LOG_PATH}"/"${CLIENT_LOG_FILE}" zerotier-client zerotier zerotier
+            ;;
+        esac
+    else
+        service_stop 20-client
+    fi
+
     if var_true "${ENABLE_CONTROLLER}" ; then
+            if var_true "${ENABLE_CLIENT}" ; then
+            print_error "Can't have both MODE CONTROLLER and CLIENT at once"
+            exit 1
+        fi
         print_debug "Configuring Controller"
         bootstrap_filesystem controller
         configure_controller
         case "${LOG_TYPE,,}" in
             file )
-                create_logrotate zerotier "${LOG_PATH}"/"${CONTROLLER_LOG_FILE}" zerotier zerotier zerotier
+                create_logrotate zerotier-controller "${LOG_PATH}"/"${CONTROLLER_LOG_FILE}" zerotier-controller zerotier zerotier
             ;;
         esac
     else
@@ -24,11 +45,11 @@ if [ ! -f "/tmp/.container/container-restart" ] ; then
     if var_true "${ENABLE_DNS}" ; then
         print_debug "Configuring DNS"
         bootstrap_filesystem dns
-        grant_sudo "${COREDNS_USER}" /usr/sbin/zerotier-cli
+        grant_sudo "${DNS_USER}" /usr/sbin/zerotier-cli
         configure_dns
         case "${LOG_TYPE,,}" in
             file )
-                create_logrotate coredns "${DNS_LOG_PATH}"/"${DNS_LOG_FILE}" coredns "${COREDNS_USER}" zerotier
+                create_logrotate coredns "${DNS_LOG_PATH}"/"${DNS_LOG_FILE}" coredns "${DNS_USER}" zerotier
             ;;
         esac
     else

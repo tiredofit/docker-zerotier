@@ -1,3 +1,19 @@
+## 1.1.0 2025-04-08 <dave at tiredofit dot ca>
+
+Paths have changed again - take notice!
+
+   ### Added
+      - Add new MODE - CLIENT - Cannot run CONTROLLER and CLIENT at same time - See README for Environment variables
+      - DNS Mode - Allow Zone Transfers via AXFR
+      - DNS Mode - Add support to include custom CoreDNS Configuration (COREDNS_INCLUDE_CONFIG)
+      - DNS Mode - Add support to include custom Hosts entries (COREDNS_INCLUDE_HOSTS)
+      - DNS Mode - Add support to add environment variable to add custom host entry (DNS_CUSTOM_HOST01-99)
+      - DNS Mode - Debugging
+
+   ### Changed
+      - Changed Controller path to /data/controller/
+
+
 ## 1.0.2 2025-04-03 <dave at tiredofit dot ca>
 
    ### Added

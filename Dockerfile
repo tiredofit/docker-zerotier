@@ -145,9 +145,11 @@ RUN source assets/functions/00-container && \
             /root/.gitconfig \
             /root/.npm \
             /root/go \
-            /usr/src/*
+            /usr/src/* \
+            /var/lib/zerotier-one
 
 EXPOSE 3000
 EXPOSE 9993/udp
+EXPOSE 9994/udp
 
 COPY install /

@@ -16,18 +16,21 @@ fi
 ZTNET_API_HOST=${UI_SITE_URL:-"http://localhost:3000"}
 ZTNET_AUTH_HEADER="x-ztnet-auth: ${ZTNET_API_TOKEN}"
 HOSTS_FILE=${HOSTS_FILE:-"/data/dns/hosts"}
+COREDNS_ALLOW_AXFR=${COREDNS_ALLOW_AXFR:-"true"}
+COREDNS_AXFR_HOSTS=${COREDNS_AXFR_HOSTS:-"*"}
 COREDNS_BIND_ALL=${COREDNS_BIND_ALL:-"true"}
 COREDNS_BIND_LOCALHOST=${COREDNS_BIND_LOCALHOST:-"true"}
 COREDNS_BIND_ZEROTIER=${COREDNS_BIND_ZEROTIER:-"true"}
 COREDNS_FILE=${COREDNS_FILE:-"/etc/coredns/Corefile"}
-COREDNS_CUSTOM_DATA_PATH=${COREDNS_CUSTOM_DATA_PATH:-"/data/coredns/"}
+COREDNS_CUSTOM_DATA_PATH=${COREDNS_CUSTOM_DATA_PATH:-"/data/dns/"}
+COREDNS_INCLUDE_CONFIG=${COREDNS_INCLUDE_CONFIG:-"${COREDNS_CUSTOM_DATA_PATH}/config.include}"}
+COREDNS_INCLUDE_HOSTS=${COREDNS_INCLUDE_HOSTS:-"${COREDNS_CUSTOM_DATA_PATH}/hosts.include"}
 COREDNS_LISTEN_PORT=${COREDNS_LISTEN_PORT:-"53"}
 COREDNS_ENABLE_FORWARD=${COREDNS_ENABLE_FORWARD:-"true"}
 COREDNS_FORWARD_MODE=${COREDNS_FORWARD_MODE:-"system"}
 COREDNS_FORWARD_UPSTREAM_HOST=${COREDNS_FORWARD_UPSTREAM_HOST:-"dns://1.1.1.1:53 dns://1.0.0.1:53"}
 
 set -eo pipefail
-
 show_help() {
     echo "ztnet-dns-companion: Contact ZTNET API, and convert a list of authorized network members to hosts(5) or coredns format"
     echo ""
@@ -44,8 +47,12 @@ show_help() {
     echo "  --coredns-listen-port <PORT>         Specify CoreDNS listen port (default: 53)"
     echo "  --coredns-forward-mode <MODE>        Specify CoreDNS forward mode (default: system)"
     echo "  --coredns-forward-upstream-host <HOSTS> Specify CoreDNS forward upstream hosts (default: dns://1.1.1.1:53 dns://1.0.0.1:53)"
+    echo "  --coredns-include-config <FILE>      Specify path to additional CoreDNS configuration file to include"
+    echo "  --coredns-include-hosts <FILE>       Specify path to additional CoreDNS hosts file to include"
+    echo "  --coredns-allow-axfr [true|false]    Enable or disable secondary zone transfers (default: false)"
+    echo "  --coredns-axfr-hosts <HOSTS>         Hosts to send notifications or allow transfers to (default: *)"
     echo "  --env <ENV_FILE>                     Load environment variables from the specified file"
-    echo "  --networks <NETWORK_INFO>            Specify networks as org:dnnsname:network (multiple networks separated by comma)"
+    echo "  --networks <NETWORK_INFO>            Specify networks as org:dnsname:network (multiple networks separated by comma)"
     echo "  --help                               Show this help message and exit"
     echo ""
     echo "Arguments:"
@@ -60,11 +67,16 @@ show_help() {
     echo "  COREDNS_BIND_ZEROTIER                Bind CoreDNS to ZeroTier interfaces (default: true)"
     echo "  COREDNS_BIND_IP                      Bind CoreDNS to specific IP addresses (optional)"
     echo "  COREDNS_FILE                         Path to CoreDNS configuration file (default: /etc/coredns/Corefile)"
-    echo "  COREDNS_CUSTOM_DATA_PATH             Path to custom CoreDNS configuration (default: /data/coredns/)"
+    echo "  COREDNS_CUSTOM_DATA_PATH             Path to custom CoreDNS configuration (default: /data/dns/)"
+    echo "  COREDNS_INCLUDE_CONFIG               Path to additional CoreDNS configuration file to include"
+    echo "  COREDNS_INCLUDE_HOSTS                Path to additional CoreDNS hosts file to include"
+    echo "  COREDNS_ALLOW_AXFR                   Enable or disable secondary zone transfers (default: false)"
+    echo "  COREDNS_AXFR_HOSTS                   Hosts to send notifications or allow transfers to (default: *)"
     echo "  COREDNS_LISTEN_PORT                  CoreDNS listen port (default: 53)"
     echo "  COREDNS_ENABLE_FORWARD               Enable CoreDNS forwarding (default: true)"
     echo "  COREDNS_FORWARD_MODE                 CoreDNS forward mode (default: system)"
     echo "  COREDNS_FORWARD_UPSTREAM_HOST        CoreDNS forward upstream hosts (default: dns://1.1.1.1:53 dns://1.0.0.1:53)"
+    echo "  DNS_CUSTOM_HOST[01,02,03++]          Custom host entry eg '<ip> hostname'"
     echo "  ZT_NETWORKS                          Networks as org:dnsname:network (multiple networks separated by comma)"
     echo ""
     echo "COREDNS_FORWARD_MODE Options:"
@@ -171,6 +183,7 @@ validate_api() {
     local api_status
 
     while [ $attempt -lt $retries ]; do
+        if [ "${DNS_DEBUG,,}" = "true" ]; then set -x ; fi
         api_status=$(curl -Ssl -L -X GET "${ZTNET_API_HOST}/api/v1/stats" \
             -H "Accept: application/json" \
             -H "${ZTNET_AUTH_HEADER}" \
@@ -185,7 +198,7 @@ validate_api() {
         attempt=$((attempt + 1))
         sleep $delay
     done
-
+    set +x
     echo "ERROR: Unable to access API or invalid API token after $retries attempts."
     exit 1
 }
@@ -212,12 +225,16 @@ ENV_FILE=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+    --debug)
+        DNS_DEBUG=true
+        shift
+        ;;
     --format)
         if [ -n "$2" ]; then
             OUTPUT_FORMAT="$2"
             shift 2
         else
-            echo "ERROR: --format requires an argument"
+            echo "ERROR: ${1} requires an argument"
             exit 1
         fi
         ;;
@@ -234,7 +251,7 @@ while [[ $# -gt 0 ]]; do
             SORT_COLUMN="$2"
             shift 2
         else
-            echo "ERROR: --sort requires an argument"
+            echo "ERROR: ${1} requires an argument"
             exit 1
         fi
         ;;
@@ -243,7 +260,7 @@ while [[ $# -gt 0 ]]; do
             ZTNET_API_HOST="$2"
             shift 2
         else
-            echo "ERROR: --host requires an argument"
+            echo "ERROR: ${1} requires an argument"
             exit 1
         fi
         ;;
@@ -253,7 +270,7 @@ while [[ $# -gt 0 ]]; do
             ZTNET_AUTH_HEADER="x-ztnet-auth: ${ZTNET_API_TOKEN}"
             shift 2
         else
-            echo "ERROR: --token requires an argument"
+            echo "ERROR: ${1} requires an argument"
             exit 1
         fi
         ;;
@@ -262,7 +279,25 @@ while [[ $# -gt 0 ]]; do
             HOSTS_FILE="$2"
             shift 2
         else
-            echo "ERROR: --hosts-file requires an argument"
+            echo "ERROR: ${1} requires an argument"
+            exit 1
+        fi
+        ;;
+    --coredns-allow-axfr)
+        if [ -n "$2" ]; then
+            COREDNS_ALLOW_AXFR="$2"
+            shift 2
+        else
+            echo "ERROR: ${1} requires an argument"
+            exit 1
+        fi
+        ;;
+    --coredns-axfr-hosts)
+        if [ -n "$2" ]; then
+            COREDNS_AXFR_HOSTS="$2"
+            shift 2
+        else
+            echo "ERROR: ${1} requires an argument"
             exit 1
         fi
         ;;
@@ -271,7 +306,7 @@ while [[ $# -gt 0 ]]; do
             COREDNS_LISTEN_PORT="$2"
             shift 2
         else
-            echo "ERROR: --coredns-listen-port requires an argument"
+            echo "ERROR: ${1} requires an argument"
             exit 1
         fi
         ;;
@@ -281,7 +316,7 @@ while [[ $# -gt 0 ]]; do
             COREDNS_FORWARD_MODE="$2"
             shift 2
         else
-            echo "ERROR: --coredns-forward-mode requires an argument"
+            echo "ERROR: ${1} requires an argument"
             exit 1
         fi
         ;;
@@ -291,7 +326,25 @@ while [[ $# -gt 0 ]]; do
             COREDNS_FORWARD_UPSTREAM_HOST="$2"
             shift 2
         else
-            echo "ERROR: --coredns-forward-upstream-host requires an argument"
+            echo "ERROR: ${1} requires an argument"
+            exit 1
+        fi
+        ;;
+    --coredns-include-hosts)
+        if [ -n "$2" ]; then
+            COREDNS_INCLUDE_HOSTS="$2"
+            shift 2
+        else
+            echo "ERROR: ${1} requires an argument"
+            exit 1
+        fi
+        ;;
+    --coredns-include-config)
+        if [ -n "$2" ]; then
+            COREDNS_INCLUDE_CONFIG="$2"
+            shift 2
+        else
+            echo "ERROR: ${1} requires an argument"
             exit 1
         fi
         ;;
@@ -306,7 +359,7 @@ while [[ $# -gt 0 ]]; do
             fi
             shift 2
         else
-            echo "ERROR: --env requires an argument"
+            echo "ERROR: ${1} requires an argument"
             exit 1
         fi
         ;;
@@ -315,7 +368,7 @@ while [[ $# -gt 0 ]]; do
             IFS=',' read -ra NETWORKS <<<"$2"
             shift 2
         else
-            echo "ERROR: --networks requires an argument"
+            echo "ERROR: ${1} requires an argument"
             exit 1
         fi
         ;;
@@ -361,8 +414,10 @@ for NETWORK in "${NETWORKS[@]}"; do
     DNSNAMES+=("$ZTNET_DNSNAME")
 
     validate_api 3 5
+    if [ "${DNS_DEBUG,,}" = "true" ]; then set -x ; fi
     netmembers=$(get_network_members "$ZTNET_NETWORK")
     netinfo=$(get_network_info "$ZTNET_NETWORK")
+    set +x
 
     # check if "error" is in the response
     if [[ "$netinfo" == *"error"* ]]; then
@@ -451,7 +506,7 @@ for NETWORK in "${NETWORKS[@]}"; do
     ADDRS+=("")
 done
 
-timestamp_comment="# File generated on $(TZ=$TIMEZONE date +'%Y-%m-%d %H:%M:%S %Z')"
+timestamp_comment="### Autogenerated_on_$(TZ=$TIMEZONE date +'%Y-%m-%dT%H:%M:%S_%Z----EDIT_CUSTOM_INCLUDE_FILES_FOR_PERSISTENCE')"
 
 write_output() {
     local file_path=$1
@@ -481,14 +536,26 @@ write_output() {
 case "${OUTPUT_FORMAT,,}" in
 hosts)
     output_content=$(
-        # echo "$timestamp_comment"
+        echo "$timestamp_comment"
         for x in "${ipv4_lines[@]}"; do printf "%s\n" "$x"; done
         for x in "${ipv6_lines[@]}"; do printf "%s\n" "$x"; done
+        customhostnum=$(printenv | sort | grep -cE '^DNS_CUSTOM_HOST([0-9].)')
+        for (( i = 01; i <= customhostnum; i++ )) ; do
+            i=$(printf "%02d" $i)
+            custom_host=DNS_CUSTOM_HOST${i}
+            echo "${!custom_host} # DNS_CUSTOM_HOST${i}"
+        done
+        if [ -f "${COREDNS_INCLUDE_HOSTS}" ]; then
+            echo "#"
+            echo "# Custom Include File Contents:"
+            cat "${COREDNS_INCLUDE_HOSTS}"
+        fi
     )
+
     if [ "$OUTPUT_TO_FILE" = true ]; then
         write_output "$HOSTS_FILE" "$output_content"
     else
-        echo "$output_content" | column -t | sed "1i $timestamp_comment"
+        echo "$output_content" | column -t
     fi
     ;;
 coredns)
@@ -517,6 +584,15 @@ coredns)
         echo "  hosts ${HOSTS_FILE} ${DNSNAMES[@]} {"
         echo "    fallthrough"
         echo "  }"
+
+        if [ "${COREDNS_ALLOW_AXFR,,}" = "true" ]; then
+            for dnsname in "${DNSNAMES[@]}"; do
+                echo "  transfer ${dnsname} {"
+                echo "    to ${COREDNS_AXFR_HOSTS}"
+                echo "  }"
+            done
+        fi
+
         if [ "${COREDNS_ENABLE_FORWARD,,}" = "true" ]; then
             case "${COREDNS_FORWARD_MODE,,}" in
             upstream)
@@ -532,12 +608,16 @@ coredns)
         echo "  cache 30"
         echo "  loop"
         echo "  reload"
-        if [ -d "${COREDNS_CUSTOM_DATA_FILE}" ]; then
-            echo "  import ${COREDNS_CUSTOM_DATA_FILE}"
+        if [ -f "${COREDNS_INCLUDE_CONFIG}" ]; then
+            echo "  import ${COREDNS_INCLUDE_CONFIG}"
         fi
         echo "}"
     )
-    if [ "$OUTPUT_TO_FILE" = true ]; then
+    if [ "${DNS_DEBUG,,}" = "true" ]; then
+        :
+    fi
+
+    if [ "${OUTPUT_TO_FILE,,}" = true ]; then
         write_output "$COREDNS_FILE" "$output_content"
     else
         echo "$output_content"

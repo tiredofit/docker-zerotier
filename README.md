@@ -38,6 +38,7 @@ This will build a Docker Image for [Zerotier One](https://zerotier.com), A virtu
     - [Container Options](#container-options)
     - [Controller Options](#controller-options)
     - [UI Options](#ui-options)
+    - [Client Options](#client-options)
     - [DNS Options](#dns-options)
       - [Optional](#optional)
   - [Networking](#networking)
@@ -97,10 +98,10 @@ Images are built primarily for `amd64` architecture, and may also include builds
 
 The following directories are used for configuration and can be mapped for persistent storage.
 
-| Directory | Description            |
-| --------- | ---------------------- |
-| `/data`   | Zerotier volatile data |
-| `/logs`   | Logfiles               |
+| Directory | Description                                                       |
+| --------- | ----------------------------------------------------------------- |
+| `/data/`  | volatile data in various subdirectories (controller, client, dns) |
+| `/logs/`  | Logfiles                                                          |
 
 
 * * *
@@ -120,21 +121,27 @@ Be sure to view the following repositories to understand all the customizable op
 
 #### Container Options
 
-| Variable | Description                                                        | Default         | `_FILE` |
-| -------- | ------------------------------------------------------------------ | --------------- | ------- |
-| `MODE`   | What mode `CONTROLLER` `UI` `DNS` `STANDALONE` seperated by commas | `CONTROLLER,UI` |         |
+| Variable   | Description                                                                 | Default         | `_FILE` |
+| ---------- | --------------------------------------------------------------------------- | --------------- | ------- |
+| `MODE`     | What mode `CLIENT` `CONTROLLER` `UI` `DNS` `STANDALONE` seperated by commas | `CONTROLLER,UI` |         |
+| `LOG_PATH` | Where to store logs                                                         | `/logs/`        |         |
+
 
 #### Controller Options
 
-| Variable                              | Description                                                    | Default     | `_FILE` |
-| ------------------------------------- | -------------------------------------------------------------- | ----------- | ------- |
-| `CONTROLLER_ALLOW_TCP_FALLBACK_RELAY` | Enable TCP relay                                               | `TRUE`      |         |
-| `CONTROLLER_DATA_PATH`                | Zerotier volatile data                                         | `/data/`    |         |
-| `CONTROLLER_ENABLE_METRICS`           | Enabler or disable prometheus metrics                          | `FALSE`     |         |
-| `CONTROLLER_ENABLE_PORT_MAPPING`      | Enable Port mapping                                            | `TRUE`      |         |
-| `CONTROLLER_LISTEN_PORT`              | Zerotier Controller listen port                                | `9993`      |         |
-| `CONTROLLER_MANAGEMENT_NETWORKS`      | Comma seperated value of networks allowed to manage controller | `0.0.0.0/0` |         |
-| `CONTROLLER_USER`                     | What username to run controller as                             | `root`      |         |
+| Variable                              | Description                                                    | Default             | `_FILE` |
+| ------------------------------------- | -------------------------------------------------------------- | ------------------- | ------- |
+| `CONTROLLER_ALLOW_TCP_FALLBACK_RELAY` | Enable TCP relay                                               | `TRUE`              |         |
+| `CONTROLLER_DATA_PATH`                | Zerotier volatile data                                         | `/data/controller/` |         |
+| `CONTROLLER_ENABLE_METRICS`           | Enabler or disable prometheus metrics                          | `FALSE`             |         |
+| `CONTROLLER_ENABLE_PORT_MAPPING`      | Enable Port mapping                                            | `TRUE`              |         |
+| `CONTROLLER_LISTEN_PORT`              | Zerotier Controller listen port                                | `9993`              |         |
+| `CONTROLLER_LOG_FILE`                 | Controller Log File                                            | `controller.log`    |         |
+| `CONTROLLER_MANAGEMENT_NETWORKS`      | Comma seperated value of networks allowed to manage controller | `0.0.0.0/0`         |         |
+| `CONTROLLER_USER`                     | What username to run controller as                             | `root`              |         |
+| `CONTROLLER_NETWORK`                  | (optional) Networks to join as Controller                      |                     | x       |
+| `CONTROLLER_IDENTITY_PRIVATE`         | (optional) Pre generated private identity                      |                     | x       |
+| `CONTROLLER_IDENTITY_PUBLIC`          | (optional) Pre generated public identity                       |                     | x       |
 
 #### UI Options
 
@@ -152,6 +159,22 @@ Be sure to view the following repositories to understand all the customizable op
 | `UI_SECRET`         | Random secret for session and cookie storage       | `random`                                     |         |
 | `UI_SITE_NAME`      | Site name to display on UI                         | `ZTNET`                                      |         |
 
+
+#### Client Options
+
+| Variable                          | Description                               | Default         | `_FILE` |
+| --------------------------------- | ----------------------------------------- | --------------- | ------- |
+| `CLIENT_ALLOW_TCP_FALLBACK_RELAY` | Enable TCP relay                          | `TRUE`          |         |
+| `CLIENT_DATA_PATH`                | Zerotier volatile data                    | `/data/client/` |         |
+| `CLIENT_ENABLE_METRICS`           | Enabler or disable prometheus metrics     | `FALSE`         |         |
+| `CLIENT_ENABLE_PORT_MAPPING`      | Enable Port mapping                       | `TRUE`          |         |
+| `CLIENT_LISTEN_PORT`              | Zerotier client listen port               | `9995`          |         |
+| `CLIENT_LOG_FILE`                 | Client Log File                           | `client.log`    |         |
+| `CLIENT_USER`                     | What username to run controller as        | `root`          |         |
+| `CLIENT_NETWORK`                  | (optional) Networks to join as client     |                 | x       |
+| `CLIENT_IDENTITY_PRIVATE`         | (optional) Pre generated private identity |                 | x       |
+| `CLIENT_IDENTITY_PUBLIC`          | (optional) Pre generated public identity  |                 | x       |
+
 #### DNS Options
 | Variable          | Description                                                                                         | Default                 | `_FILE` |
 | ----------------- | --------------------------------------------------------------------------------------------------- | ----------------------- | ------- |
@@ -160,27 +183,35 @@ Be sure to view the following repositories to understand all the customizable op
 | `ZT_NETWORKS`     | Networks as org:dnsname:network (multiple networks separated by comma) eg org123:example.com:net123 |                         |         |
 
 ##### Optional
-| Variable                        | Description                                   | Default                             | `_FILE` |
-| ------------------------------- | --------------------------------------------- | ----------------------------------- | ------- |
-| `COREDNS_BIND_ALL`              | Bind CoreDNS to all interfaces                | `true`                             |         |
-| `COREDNS_BIND_LOCALHOST`        | Bind CoreDNS to localhost                     | `true`                              |         |
-| `COREDNS_BIND_ZEROTIER`         | Bind CoreDNS to ZeroTier interfaces           | `true`                              |         |
-| `COREDNS_BIND_IP`               | Bind CoreDNS to specific IP addresses         |                                     |         |
-| `COREDNS_FILE`                  | Path to CoreDNS configuration file            | `/etc/coredns/Corefile`             |         |
-| `COREDNS_CUSTOM_DATA_PATH`      | Path to custom CoreDNS configuration          | `/data/coredns/`                    |         |
-| `COREDNS_LISTEN_PORT`           | CoreDNS listen port                           | `53`                                |         |
-| `COREDNS_ENABLE_FORWARD`        | Enable CoreDNS forwarding                     | `true`                              |         |
-| `COREDNS_FORWARD_MODE`          | CoreDNS forward mode (`system` or `upstream`) | `system`                            |         |
-| `COREDNS_FORWARD_UPSTREAM_HOST` | CoreDNS forward upstream hosts                | `dns://1.1.1.1:53 dns://1.0.0.1:53` |         |
+| Variable                    | Description                                                  | Default                                  | `_FILE` |
+| --------------------------- | ------------------------------------------------------------ | ---------------------------------------- | ------- |
+| `DNS_ALLOW_AXFR`            | Allow Zone Transfers to secondary servers                    | `true`                                   |         |
+| `DNS_AXFR_HOSTS`            | Hosts to notify when files has changed, or allow transfer to | `*`                                      |         |
+| `DNS_BIND_ALL`              | Bind CoreDNS to all interfaces                               | `true`                                   |         |
+| `DNS_BIND_LOCALHOST`        | Bind CoreDNS to localhost                                    | `true`                                   |         |
+| `DNS_BIND_ZEROTIER`         | Bind CoreDNS to ZeroTier interfaces                          | `true`                                   |         |
+| `DNS_BIND_IP`               | Bind CoreDNS to specific IP addresses                        |                                          |         |
+| `DNS_CONFIG_FILE`           | Path to CoreDNS configuration file                           | `/etc/coredns/Corefile`                  |         |
+| `DNS_CUSTOM_DATA_PATH`      | Path to CoreDNS hosts                                        | `/data/dns/`                             |         |
+| `DNS_CUSTOM_HOST[00,01]`    | DNS Custom host entry eg `127.0.0.1 hostname.domain`         |                                          |         |
+| `DNS_ENABLE_FORWARD`        | Enable CoreDNS forwarding                                    | `true`                                   |         |
+| `DNS_FORWARD_MODE`          | CoreDNS forward mode (`system` or `upstream`)                | `system`                                 |         |
+| `DNS_FORWARD_UPSTREAM_HOST` | CoreDNS forward upstream hosts                               | `dns://1.1.1.1:53 dns://1.0.0.1:53`      |         |
+| `DNS_INCLUDE_CONFIG`        | Path to to custom CoreDNS Configuration to include           | `${DNS_CUSTOM_DATA_PATH}/config.include` |         |
+| `DNS_INCLUDE_HOSTS`         | Path to to custom Hosts file to include                      | `${DNS_CUSTOM_DATA_PATH}/hosts.include`  |         |
+| `DNS_LISTEN_PORT`           | CoreDNS listen port                                          | `53`                                     |         |
 
 
 ### Networking
 
 | Port   | Protocol | Description          |
 | ------ | -------- | -------------------- |
+| `53`   | `udp`    | CoreDNS              |
 | `80`   | `tcp`    | Nginx                |
 | `3000` | `tcp`    | ZTNET web UI         |
 | `9993` | `udp`    | Zerotier Control API |
+| `9994` | `udp`    | Zerotier Client API  |
+
 
 ## Maintenance
 ### Shell Access
