@@ -214,6 +214,17 @@ configure_dns() {
     sanity_var ZTNET_API_TOKEN "Personal + Org API Token from ZTNET"
     set -o posix ; set | grep -E '^(DNS_LISTEN_PORT=|LOG_PATH=|ZTNET_API_HOST=|ZTNET_AUTH_HEADER=|ZT_NETWORKS=)' > /etc/coredns/.env
     sed -i "s|^DNS_|COREDNS_|g" /etc/coredns/.env
+    case "${DNS_OUTPUT_FORMAT,,}" in
+        both )
+                echo "${DNS_UPDATE_PERIOD} source /etc/coredns/.env ; s6-setuidgid ${DNS_USER} /usr/local/bin/ztnet-dns-companion --mode hosts --file >/dev/null 2>&1 ; s6-setuidgid ${DNS_USER} /usr/local/bin/ztnet-dns-companion --mode zones --file >/dev/null 2>&1" >> /assets/cron/crontab.txt
+            ;;
+        host* )
+                echo "${DNS_UPDATE_PERIOD} source /etc/coredns/.env ; s6-setuidgid ${DNS_USER} /usr/local/bin/ztnet-dns-companion --mode hosts --file >/dev/null 2>&1" >> /assets/cron/crontab.txt
+            ;;
+        zone* )
+                echo "${DNS_UPDATE_PERIOD} source /etc/coredns/.env ; s6-setuidgid ${DNS_USER} /usr/local/bin/ztnet-dns-companion --mode zones --file >/dev/null 2>&1" >> /assets/cron/crontab.txt
+            ;;
+    esac
     echo "${DNS_UPDATE_PERIOD} source /etc/coredns/.env ; s6-setuidgid ${DNS_USER} /usr/local/bin/ztnet-dns-companion --file >/dev/null 2>&1" >> /assets/cron/crontab.txt
 }
 

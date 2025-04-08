@@ -192,13 +192,15 @@ Be sure to view the following repositories to understand all the customizable op
 | `DNS_BIND_ZEROTIER`         | Bind CoreDNS to ZeroTier interfaces                          | `true`                                   |         |
 | `DNS_BIND_IP`               | Bind CoreDNS to specific IP addresses                        |                                          |         |
 | `DNS_CONFIG_FILE`           | Path to CoreDNS configuration file                           | `/etc/coredns/Corefile`                  |         |
-| `DNS_CUSTOM_DATA_PATH`      | Path to CoreDNS hosts                                        | `/data/dns/`                             |         |
+| `DNS_CUSTOM_DATA_PATH`      | Path to CoreDNS entries                                        | `/data/dns/`                             |         |
 | `DNS_CUSTOM_HOST[00,01]`    | DNS Custom host entry eg `127.0.0.1 hostname.domain`         |                                          |         |
+| `DNS_CUSTOM_ZONE[00,01]`    | DNS Custom host entry eg `hostname.domainname. IN A 127.0.0.1`         |                                          |         |
 | `DNS_ENABLE_FORWARD`        | Enable CoreDNS forwarding                                    | `true`                                   |         |
 | `DNS_FORWARD_MODE`          | CoreDNS forward mode (`system` or `upstream`)                | `system`                                 |         |
 | `DNS_FORWARD_UPSTREAM_HOST` | CoreDNS forward upstream hosts                               | `dns://1.1.1.1:53 dns://1.0.0.1:53`      |         |
 | `DNS_INCLUDE_CONFIG`        | Path to to custom CoreDNS Configuration to include           | `${DNS_CUSTOM_DATA_PATH}/config.include` |         |
 | `DNS_INCLUDE_HOSTS`         | Path to to custom Hosts file to include                      | `${DNS_CUSTOM_DATA_PATH}/hosts.include`  |         |
+| `DNS_INCLUDE_ZONES`         | Path to to custom Zones file to include                      | `${DNS_CUSTOM_DATA_PATH}/zones.include`  |         |
 | `DNS_LISTEN_PORT`           | CoreDNS listen port                                          | `53`                                     |         |
 
 

@@ -16,6 +16,7 @@ fi
 ZTNET_API_HOST=${UI_SITE_URL:-"http://localhost:3000"}
 ZTNET_AUTH_HEADER="x-ztnet-auth: ${ZTNET_API_TOKEN}"
 HOSTS_FILE=${HOSTS_FILE:-"/data/dns/hosts"}
+ZONES_FILE=${ZONES_FILE:-"/data/dns/zones"}
 COREDNS_ALLOW_AXFR=${COREDNS_ALLOW_AXFR:-"true"}
 COREDNS_AXFR_HOSTS=${COREDNS_AXFR_HOSTS:-"*"}
 COREDNS_BIND_ALL=${COREDNS_BIND_ALL:-"true"}
@@ -25,7 +26,9 @@ COREDNS_FILE=${COREDNS_FILE:-"/etc/coredns/Corefile"}
 COREDNS_CUSTOM_DATA_PATH=${COREDNS_CUSTOM_DATA_PATH:-"/data/dns/"}
 COREDNS_INCLUDE_CONFIG=${COREDNS_INCLUDE_CONFIG:-"${COREDNS_CUSTOM_DATA_PATH}/config.include}"}
 COREDNS_INCLUDE_HOSTS=${COREDNS_INCLUDE_HOSTS:-"${COREDNS_CUSTOM_DATA_PATH}/hosts.include"}
+COREDNS_INCLUDE_ZONES=${COREDNS_INCLUDE_ZONES:-"${COREDNS_CUSTOM_DATA_PATH}/zones.include"}
 COREDNS_LISTEN_PORT=${COREDNS_LISTEN_PORT:-"53"}
+COREDNS_OUTPUT=${COREDNS_OUTPUT:-"hosts"}
 COREDNS_ENABLE_FORWARD=${COREDNS_ENABLE_FORWARD:-"true"}
 COREDNS_FORWARD_MODE=${COREDNS_FORWARD_MODE:-"system"}
 COREDNS_FORWARD_UPSTREAM_HOST=${COREDNS_FORWARD_UPSTREAM_HOST:-"dns://1.1.1.1:53 dns://1.0.0.1:53"}
@@ -37,13 +40,15 @@ show_help() {
     echo "Usage: $0 [OPTIONS] [:ORG_NAME[:DNS_NAME]]NETWORK_ID"
     echo ""
     echo "Options:"
-    echo "  --format [hosts|coredns]             Specify output format (default: hosts)"
+    echo "  --mode [hosts|zones|coredns]        Specify output format (default: hosts)"
     echo "  --file                               Write output to file based on format (default: console output)"
     echo "  --force                              Force writing output to file regardless of changes"
     echo "  --sort [ip|hostname]                 Specify sorting column (default: hostname)"
     echo "  --host <API_HOST>                    Specify ZTNET API host (default: http://localhost:3000)"
     echo "  --token <API_TOKEN>                  Specify ZTNET API token"
+    echo "  --coredns-output [hosts|zones|both]  What configuration to output CorDNS for (default: hosts)"
     echo "  --hosts-file <HOSTS_FILE>            Specify path to CoreDNS hosts file (default: /data/dns/hosts)"
+    echo "  --zones-file <ZONES_FILE>            Specify path to CoreDNS zones file (default: /data/dns/zones)"
     echo "  --coredns-listen-port <PORT>         Specify CoreDNS listen port (default: 53)"
     echo "  --coredns-forward-mode <MODE>        Specify CoreDNS forward mode (default: system)"
     echo "  --coredns-forward-upstream-host <HOSTS> Specify CoreDNS forward upstream hosts (default: dns://1.1.1.1:53 dns://1.0.0.1:53)"
@@ -62,6 +67,8 @@ show_help() {
     echo "  ZTNET_API_TOKEN                      ZTNET API token (required)"
     echo "  ZTNET_API_HOST                       ZTNET API host (default: http://localhost:3000)"
     echo "  HOSTS_FILE                           Path to CoreDNS hosts file (default: /data/dns/hosts)"
+    echo "  ZONES_FILE                           Path to CoreDNS zones file (default: /data/dns/zones)"
+    echo "  COREDNS_OUTPUT [hosts|zones]         Output generated config for CoreDNS File type (default: hosts)"
     echo "  COREDNS_BIND_ALL                     Bind CoreDNS to all interfaces (default: false)"
     echo "  COREDNS_BIND_LOCALHOST               Bind CoreDNS to localhost (default: true)"
     echo "  COREDNS_BIND_ZEROTIER                Bind CoreDNS to ZeroTier interfaces (default: true)"
@@ -77,6 +84,7 @@ show_help() {
     echo "  COREDNS_FORWARD_MODE                 CoreDNS forward mode (default: system)"
     echo "  COREDNS_FORWARD_UPSTREAM_HOST        CoreDNS forward upstream hosts (default: dns://1.1.1.1:53 dns://1.0.0.1:53)"
     echo "  DNS_CUSTOM_HOST[01,02,03++]          Custom host entry eg '<ip> hostname'"
+    echo "  DNS_CUSTOM_ZONE[01,02,03++]          Custom zone host entry eg 'hostname.domainname. IN A <ip>'"
     echo "  ZT_NETWORKS                          Networks as org:dnsname:network (multiple networks separated by comma)"
     echo ""
     echo "COREDNS_FORWARD_MODE Options:"
@@ -84,12 +92,12 @@ show_help() {
     echo "  upstream - Use specified upstream DNS servers (e.g., dns://1.1.1.1:53 dns://1.0.0.1:53)"
     echo ""
     echo "Examples:"
-    echo "  $0 --format hosts orgname1234:example.domain:network1234"
-    echo "  $0 --format coredns --sort ip orgname1234:example.domain:network1234"
-    echo "  $0 --format hosts --file orgname1234:example.domain:network1234"
-    echo "  $0 --format coredns --file --force orgname1234:example.domain:network1234"
-    echo "  $0 --env /path/to/envfile --format hosts --file orgname1234:example.domain:network1234"
-    echo "  $0 --networks orgname1:example1.domain:network1,orgname2:example2.domain:network2 --format hosts --file"
+    echo "  $0 --mode hosts orgname1234:example.domain:network1234"
+    echo "  $0 --mode coredns --sort ip orgname1234:example.domain:network1234"
+    echo "  $0 --mode hosts --file orgname1234:example.domain:network1234"
+    echo "  $0 --mode coredns --file --force orgname1234:example.domain:network1234"
+    echo "  $0 --env /path/to/envfile --mode hosts --file orgname1234:example.domain:network1234"
+    echo "  $0 --networks orgname1:example1.domain:network1,orgname2:example2.domain:network2 --mode hosts --file"
 }
 
 get_network_info() {
@@ -217,7 +225,7 @@ ipv4_lines=("127.0.0.1 localhost")
 ipv6_lines=("::1 localhost ip6-localhost ip6-loopback")
 DNSNAMES=()
 
-OUTPUT_FORMAT="hosts"
+SCRIPT_MODE="hosts"
 SORT_COLUMN="hostname"
 OUTPUT_TO_FILE=false
 FORCE_WRITE=false
@@ -229,9 +237,9 @@ while [[ $# -gt 0 ]]; do
         DNS_DEBUG=true
         shift
         ;;
-    --format)
+    --mode)
         if [ -n "$2" ]; then
-            OUTPUT_FORMAT="$2"
+            SCRIPT_MODE="$2"
             shift 2
         else
             echo "ERROR: ${1} requires an argument"
@@ -277,6 +285,15 @@ while [[ $# -gt 0 ]]; do
     --hosts-file)
         if [ -n "$2" ]; then
             HOSTS_FILE="$2"
+            shift 2
+        else
+            echo "ERROR: ${1} requires an argument"
+            exit 1
+        fi
+        ;;
+    --zones-file)
+        if [ -n "$2" ]; then
+            ZONES_FILE="$2"
             shift 2
         else
             echo "ERROR: ${1} requires an argument"
@@ -333,6 +350,15 @@ while [[ $# -gt 0 ]]; do
     --coredns-include-hosts)
         if [ -n "$2" ]; then
             COREDNS_INCLUDE_HOSTS="$2"
+            shift 2
+        else
+            echo "ERROR: ${1} requires an argument"
+            exit 1
+        fi
+        ;;
+    --coredns-include-zones)
+        if [ -n "$2" ]; then
+            COREDNS_INCLUDE_ZONES="$2"
             shift 2
         else
             echo "ERROR: ${1} requires an argument"
@@ -533,8 +559,8 @@ write_output() {
     fi
 }
 
-case "${OUTPUT_FORMAT,,}" in
-hosts)
+case "${SCRIPT_MODE,,}" in
+host*)
     output_content=$(
         echo "$timestamp_comment"
         for x in "${ipv4_lines[@]}"; do printf "%s\n" "$x"; done
@@ -552,10 +578,43 @@ hosts)
         fi
     )
 
-    if [ "$OUTPUT_TO_FILE" = true ]; then
+    if [ "${OUTPUT_TO_FILE,,}" = "true" ]; then
         write_output "$HOSTS_FILE" "$output_content"
     else
         echo "$output_content" | column -t
+    fi
+    ;;
+zone*)
+    output_content=$(
+        for dnsname in "${DNSNAMES[@]}"; do
+            echo "; Automatically generated DNS records for ${dnsname}"
+            echo "\$TTL 600"
+            echo "@ IN SOA ns1.${dnsname}. admin.${dnsname}. ( $(date +%s) 10800 3600 604800 600 )"
+            echo "@ IN NS ns1.${dnsname}"
+            for entry in $(echo "$joined" | jq -c '.'); do
+                member=$(echo "${entry}" | jq -r '.name')
+                for ip in $(echo "${entry}" | jq -r '.ips[]'); do
+                    #echo "*.$member.${dnsname}. IN A $ip"
+                    echo "${member}.${dnsname}. IN A ${ip}"
+                done
+            done
+        done
+        customzonenum=$(printenv | sort | grep -cE '^DNS_CUSTOM_ZONE([0-9].)')
+        for (( i = 01; i <= customzonenum; i++ )) ; do
+            i=$(printf "%02d" $i)
+            custom_zone=DNS_CUSTOM_ZONE${i}
+            echo "${!custom_zone} # DNS_CUSTOM_ZONE${i}"
+        done
+        if [ -f "${COREDNS_INCLUDE_ZONES}" ]; then
+            echo ";"
+            echo "; Custom Include Zone Contents:"
+            cat "${COREDNS_INCLUDE_ZONES}"
+        fi
+    )
+    if [ "${OUTPUT_TO_FILE,,}" = "true" ]; then
+        write_output "${ZONES_FILE}" "$output_content"
+    else
+        echo "$output_content"
     fi
     ;;
 coredns)
@@ -580,11 +639,29 @@ coredns)
             done
         fi
         echo
-        echo "  # handle specific domains via hosts, otherwise fallthrough"
-        echo "  hosts ${HOSTS_FILE} ${DNSNAMES[@]} {"
-        echo "    fallthrough"
-        echo "  }"
-
+        case "${COREDNS_OUTPUT,,}" in
+            host*)
+                echo "  # handle specific domains via hosts, otherwise fallthrough"
+                echo "  hosts ${HOSTS_FILE} ${DNSNAMES[@]} {"
+                echo "    fallthrough"
+                echo "  }"
+                ;;
+            zone*)
+                echo "  file ${ZONES_FILE} {"
+                echo "    reload 30s"
+                echo "  }"
+                ;;
+            both)
+                echo "  # handle specific domains via hosts, otherwise fallthrough"
+                echo "  hosts ${HOSTS_FILE} ${DNSNAMES[@]} {"
+                echo "    fallthrough"
+                echo "  }"
+                echo ""
+                echo "  file ${ZONES_FILE} {"
+                echo "    reload 30s"
+                echo "  }"
+                ;;
+        esac
         if [ "${COREDNS_ALLOW_AXFR,,}" = "true" ]; then
             for dnsname in "${DNSNAMES[@]}"; do
                 echo "  transfer ${dnsname} {"
@@ -624,7 +701,7 @@ coredns)
     fi
     ;;
 *)
-    echo "ERROR: Unknown output format '${OUTPUT_FORMAT}'"
+    echo "ERROR: Unknown script omde format '${SCRIPT_MODE}'"
     exit 1
     ;;
 esac

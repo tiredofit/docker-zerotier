@@ -1,3 +1,11 @@
+## 1.1.1 2025-04-08 <dave at tiredofit dot ca>
+
+   ### Added
+      - DNS: Add Zone File Output options
+      - DNS: Add Custom Zones file entries
+      - DNS: Add Custom Zones Environment variables
+
+
 ## 1.1.0 2025-04-08 <dave at tiredofit dot ca>
 
 Paths have changed again - take notice!
