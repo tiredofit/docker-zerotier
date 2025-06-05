@@ -9,7 +9,7 @@ ARG ZT_NET_VERSION
 
 ENV COREDNS_VERSION=${COREDNS_VERSION:-"v1.12.1"} \
     ZEROTIER_VERSION=${ZEROTIER_VERSION:-"1.14.2"} \
-    ZT_NET_VERSION=${ZT_NET_VERSION:-"v0.7.4"} \
+    ZT_NET_VERSION=${ZT_NET_VERSION:-"v0.7.5"} \
     COREDNS_REPO_URL=https://github.com/coredns/coredns \
     ZEROTIER_REPO_URL=https://github.com/zerotier/ZeroTierOne \
     ZT_NET_REPO_URL=https://github.com/sinamics/ztnet \
@@ -26,12 +26,12 @@ ADD build-assets/ /build-assets
 
 RUN source assets/functions/00-container && \
     set -x && \
-    addgroup -S -g 2323 zerotier && \
+    addgroup -S -g 9376 zerotier && \
     adduser -D -S -s /sbin/nologin \
             -h /dev/null \
             -G zerotier \
             -g "zerotier" \
-            -u 2323 zerotier \
+            -u 9376 zerotier \
             && \
     \
     addgroup -S -g 5353 coredns && \

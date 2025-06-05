@@ -15,7 +15,7 @@ if [ ! -f "/tmp/.container/container-restart" ] ; then
         fi
         print_debug "Configuring Client"
         bootstrap_filesystem client
-        configure_controller
+        configure_client
         case "${LOG_TYPE,,}" in
             file )
                 create_logrotate zerotier-client "${LOG_PATH}"/"${CLIENT_LOG_FILE}" zerotier-client zerotier zerotier

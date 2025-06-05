@@ -1,3 +1,13 @@
+## 1.1.3 2025-06-05 <dave at tiredofit dot ca>
+
+   ### Added
+      - ZT-Net 0.7.5
+
+   ### Changed
+      - Change zerotier uid/gid from 2323 to 9376
+      - Fix issue with MODE=CLIENT
+
+
 ## 1.1.2 2025-05-23 <dave at tiredofit dot ca>
 
    ### Added
