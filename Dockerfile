@@ -108,6 +108,7 @@ RUN source assets/functions/00-container && \
     npm ci && \
     SKIP_ENV_VALIDATION=1 npm run build && \
     cd /usr/src/ztnet/ztnodeid && \
+    go mod tidy && \
     go build -ldflags='-s -w' -trimpath -o /usr/bin/ztmkworld cmd/mkworld/main.go && \
     cd /usr/src/ztnet && \
     mkdir -p /app && \

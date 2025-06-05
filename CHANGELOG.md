@@ -1,3 +1,9 @@
+## 1.1.4 2025-06-05 <dave at tiredofit dot ca>
+
+   ### Changed
+      - Update go modules to resolve build issue of ZTnet Mkworld
+
+
 ## 1.1.3 2025-06-05 <dave at tiredofit dot ca>
 
    ### Added
