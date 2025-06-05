@@ -74,7 +74,12 @@ bootstrap_filesystem() {
             if [ ! -d "${DNS_DATA_PATH}" ]; then
                 mkdir -p "${DNS_DATA_PATH}"
             fi
-            if [ "$(stat -c %U "${DNS_DATA_PATH}")" != "coredns" ] ; then chown "${DNS_USER}":zerotier "${DNS_DATA_PATH}" ; fi
+            if [ "$(stat -c %U "${DNS_DATA_PATH}")" != "${DNS_USER}" ] ; then chown "${DNS_USER}":zerotier "${DNS_DATA_PATH}" ; fi
+            if [ ! -d "${DNS_LOG_PATH}" ]; then
+                mkdir -p "${DNS_LOG_PATH}"
+            fi
+            create_logrotate coredns "${DNS_LOG_PATH}"/"${DNS_LOG_FILE}" coredns "${DNS_USER}" zerotier
+            if [ "$(stat -c %U "${DNS_DATA_PATH}")" != "${DNS_USER}" ] ; then chown "${DNS_USER}":zerotier "${DNS_LOG_PATH}"/"${DNS_LOG_FILE}" ; fi
         ;;
         logs )
             if [ ! -d "${LOG_PATH}" ]; then

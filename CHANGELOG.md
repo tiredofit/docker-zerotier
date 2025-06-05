@@ -1,3 +1,9 @@
+## 1.1.6 2025-06-05 <dave at tiredofit dot ca>
+
+   ### Added
+      - Add log rotation for MODE=DNS
+
+
 ## 1.1.5 2025-06-05 <dave at tiredofit dot ca>
 
    ### Changed
