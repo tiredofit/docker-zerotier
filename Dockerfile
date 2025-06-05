@@ -4,6 +4,7 @@ ARG DISTRO_VARIANT=3.21
 FROM docker.io/tiredofit/nginx:${DISTRO}-${DISTRO_VARIANT}
 LABEL maintainer="Dave Conroy (github.com/tiredofit)"
 
+ARG COREDNS_VERSION
 ARG ZEROTIER_VERSION
 ARG ZT_NET_VERSION
 
