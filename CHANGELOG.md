@@ -1,3 +1,9 @@
+## 1.1.5 2025-06-05 <dave at tiredofit dot ca>
+
+   ### Changed
+      - Fix Client Configuration JSON generation
+
+
 ## 1.1.4 2025-06-05 <dave at tiredofit dot ca>
 
    ### Changed

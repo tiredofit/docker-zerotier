@@ -90,12 +90,12 @@ bootstrap_filesystem() {
 
 
 configure_client() {
-    if var_false "${CONTROLLER_ENABLE_METRICS}" ; then ln -sf /dev/null "${CLIENT_DATA_PATH}"/metrics.prom ; fi
+    if var_false "${CLIENT_ENABLE_METRICS}" ; then ln -sf /dev/null "${CLIENT_DATA_PATH}"/metrics.prom ; fi
     cat <<EOF > "${CLIENT_DATA_PATH}"/local.conf
   {
     "settings": {
         "primaryPort": ${CLIENT_LISTEN_PORT},
-        "portMappingEnabled": ${CLIENT_ENABLE_PORT_MAPPING,,}},
+        "portMappingEnabled": ${CLIENT_ENABLE_PORT_MAPPING,,},
         "softwareUpdate": "disable",
         "allowTcpFallbackRelay": ${CLIENT_ALLOW_TCP_FALLBACK_RELAY,,}
     }
