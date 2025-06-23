@@ -659,6 +659,7 @@ coredns)
                 echo ""
                 echo "  file ${ZONES_FILE} {"
                 echo "    reload 30s"
+                echo "    fallthrough"
                 echo "  }"
                 ;;
         esac

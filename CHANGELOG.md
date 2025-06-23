@@ -1,3 +1,9 @@
+## 1.1.10 2025-06-23 <dave at tiredofit dot ca>
+
+   ### Added
+      - Add fallthrough support to CoreDNS ZTNET Companion
+
+
 ## 1.1.9 2025-06-23 <dave at tiredofit dot ca>
 
    ### Added
