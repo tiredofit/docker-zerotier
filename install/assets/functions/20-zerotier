@@ -79,7 +79,7 @@ bootstrap_filesystem() {
                 mkdir -p "${DNS_LOG_PATH}"
             fi
             create_logrotate coredns "${DNS_LOG_PATH}"/"${DNS_LOG_FILE}" coredns "${DNS_USER}" zerotier
-            if [ "$(stat -c %U "${DNS_DATA_PATH}")" != "${DNS_USER}" ] ; then chown "${DNS_USER}":zerotier "${DNS_LOG_PATH}"/"${DNS_LOG_FILE}" ; fi
+            if [ "$(stat -c %U "${DNS_LOG_PATH}")" != "${DNS_USER}" ] ; then chown -R "${DNS_USER}":zerotier "${DNS_LOG_PATH}"/"${DNS_LOG_FILE}" ; fi
         ;;
         logs )
             if [ ! -d "${LOG_PATH}" ]; then

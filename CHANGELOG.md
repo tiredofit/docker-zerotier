@@ -1,3 +1,9 @@
+## 1.1.8 2025-06-23 <dave at tiredofit dot ca>
+
+   ### Changed
+      - And another check
+
+
 ## 1.1.7 2025-06-23 <dave at tiredofit dot ca>
 
    ### Added
