@@ -36,6 +36,9 @@ if [ "${?}" = "0" ]; then
     esac
 fi
 
+if [ "$(stat -c %U "${DNS_DATA_PATH}")" != "${DNS_USER}" ] ; then chown "${DNS_USER}":zerotier "${DNS_LOG_PATH}"/"${DNS_LOG_FILE}" ; fi
+
+
 if [ -f /etc/coredns/Corefile ] ; then
     print_start "Starting CoreDNS ${COREDNS_VERSION}"
     exec s6-setuidgid "${DNS_USER}" coredns \

@@ -1,3 +1,9 @@
+## 1.1.7 2025-06-23 <dave at tiredofit dot ca>
+
+   ### Added
+      - Add additional performance check for dns log file to solve logrotate issues
+
+
 ## 1.1.6 2025-06-05 <dave at tiredofit dot ca>
 
    ### Added
