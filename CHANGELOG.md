@@ -1,3 +1,9 @@
+## 1.1.9 2025-06-23 <dave at tiredofit dot ca>
+
+   ### Added
+      - CoreDNS 1.12.2
+
+
 ## 1.1.8 2025-06-23 <dave at tiredofit dot ca>
 
    ### Changed
