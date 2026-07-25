@@ -1,3 +1,9 @@
+## 1.2.7 2026-07-25 <code at nfrastack dot com>
+
+   ### Added
+      - ZTNet 0.8.3
+
+
 ## 1.2.6 2026-07-14 <code at nfrastack dot com>
 
    ### Added
